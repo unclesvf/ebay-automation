@@ -170,6 +170,17 @@ class OutlookReader:
             print(f"Error marking email as read: {e}")
             return False
 
+    def mark_as_unread(self, entry_id: str) -> bool:
+        """Mark an email as unread by its EntryID."""
+        try:
+            item = self.namespace.GetItemFromID(entry_id)
+            item.UnRead = True
+            item.Save()
+            return True
+        except Exception as e:
+            print(f"Error marking email as unread: {e}")
+            return False
+
     def move_email(self, entry_id: str, dest_folder) -> bool:
         """Move an email to a different folder."""
         try:

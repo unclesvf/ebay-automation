@@ -3,8 +3,14 @@ End and Relist Script
 Workflow: End listing via eBay help page, then Sell Similar with new price
 
 Usage:
-    python end_and_relist.py          # Get next batch, open pages
+    python end_and_relist.py          # Show current batch (does NOT mark anything complete)
+    python end_and_relist.py --done   # Mark previous batch complete, then show next batch
     python end_and_relist.py --test   # Test with just 2 items
+
+Workflow:
+    1. Run script (no flags) to see batch and open pages
+    2. Process the items in Chrome
+    3. Run with --done to mark complete and get next batch
 """
 import os
 import sys
@@ -75,7 +81,7 @@ def get_next_batch(reader, limit=5):
     folder = reader.get_folder_by_name(OUTLOOK_CONFIG['folder_name'], OUTLOOK_CONFIG['account_email'])
     if not folder:
         print(f"Folder '{OUTLOOK_CONFIG['folder_name']}' not found")
-        return []
+        return [], []
 
     # Load already completed items
     completed = load_completed()
@@ -83,14 +89,31 @@ def get_next_batch(reader, limit=5):
         print(f"Skipping {len(completed)} already-completed items")
 
     # Get more emails than needed since some may be skipped
-    emails = reader.read_emails(folder, limit=limit * 3, unread_only=True)
+    emails = reader.read_emails(folder, limit=limit * 5, unread_only=True)
 
     parser = EmailParser()
     listings = []
+    instruction_emails = []  # Emails without eBay URLs (instructions from Linda)
 
     for email in emails:
+        subject = email.get('subject', '')
+
+        # Skip reply emails (Re:) - these are conversations, not listings
+        if subject.lower().startswith('re:'):
+            continue
+
         if len(listings) >= limit:
-            break
+            # Still check remaining emails for instruction emails
+            parsed = parser.parse_email(email)
+            if not parsed:
+                # No eBay URL - might be an instruction email
+                instruction_emails.append({
+                    'subject': subject,
+                    'body': email.get('body', '')[:300],
+                    'entry_id': email['entry_id'],
+                })
+            continue
+
         parsed = parser.parse_email(email)
         if parsed and parsed.new_price is not None:
             # Skip if already completed
@@ -101,6 +124,15 @@ def get_next_batch(reader, limit=5):
                 'item_id': parsed.item_id,
                 'title': parsed.item_title[:55],
                 'price': parsed.new_price,
+                'quantity': parsed.quantity,
+                'notes': parsed.notes,
+            })
+        elif not parsed:
+            # No eBay URL found - might be an instruction email from Linda
+            instruction_emails.append({
+                'subject': subject,
+                'body': email.get('body', '')[:300],
+                'entry_id': email['entry_id'],
             })
 
     # Save pending entries for next run
@@ -108,7 +140,7 @@ def get_next_batch(reader, limit=5):
         for l in listings:
             f.write(f"{l['entry_id']}|{l['item_id']}|{l['price']}\n")
 
-    return listings
+    return listings, instruction_emails
 
 
 def open_pages(listings):
@@ -125,8 +157,9 @@ def open_pages(listings):
 
 
 def main():
-    # Check for test mode
+    # Check for flags
     test_mode = '--test' in sys.argv
+    mark_done = '--done' in sys.argv
     batch_size = 2 if test_mode else 5
 
     if test_mode:
@@ -137,14 +170,39 @@ def main():
         print("Failed to connect to Outlook")
         return
 
-    # Mark previous batch as done
-    mark_previous_done(reader)
+    # Only mark previous batch as done if --done flag is passed
+    if mark_done:
+        completed_count = mark_previous_done(reader)
+        if completed_count:
+            print(f"Marked {completed_count} items as completed.\n")
+    elif os.path.exists(PENDING_FILE):
+        # Remind user about pending items
+        with open(PENDING_FILE, 'r', encoding='utf-8') as f:
+            pending_count = len([l for l in f.readlines() if l.strip()])
+        if pending_count:
+            print(f"NOTE: {pending_count} items from previous batch still pending.")
+            print("      Run with --done flag after completing them.\n")
 
     # Get next batch
-    listings = get_next_batch(reader, limit=batch_size)
+    listings, instruction_emails = get_next_batch(reader, limit=batch_size)
+
+    # Always show instruction emails first (important messages from Linda)
+    if instruction_emails:
+        print()
+        print("!" * 70)
+        print("ATTENTION: INSTRUCTION EMAILS FROM LINDA")
+        print("!" * 70)
+        for instr in instruction_emails:
+            print(f"\nSubject: {instr['subject']}")
+            print(f"Message: {instr['body']}")
+            print("-" * 50)
+        print()
 
     if not listings:
-        print("No more unread emails with eBay price updates!")
+        if instruction_emails:
+            print("No eBay listings to process, but please review the instruction emails above.")
+        else:
+            print("No more unread emails with eBay price updates!")
         return
 
     # Display items with full info
@@ -160,6 +218,10 @@ def main():
         print(f"  [{i}] {l['title']}")
         print(f"      Item #: {l['item_id']}")
         print(f"      Price:  ${l['price']:.2f}")
+        if l.get('quantity'):
+            print(f"      >>> QUANTITY: {l['quantity']} <<<")
+        if l.get('notes'):
+            print(f"      >>> NOTES: {'; '.join(l['notes'])}")
         print()
     print("=" * 70)
 
@@ -170,7 +232,7 @@ def main():
     print("  - Tab 1: End Your Listing page (enter item numbers, reason: 'error in listing')")
     print("  - Tabs 2+: Item pages (click 'Sell Similar' after ending each)")
     print()
-    print("When done, run this script again to mark complete and get next batch.")
+    print("When done, run: python end_and_relist.py --done")
 
 
 if __name__ == "__main__":
