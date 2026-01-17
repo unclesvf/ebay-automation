@@ -4,8 +4,9 @@ Extracts eBay listing information from emails
 """
 
 import re
+from html import unescape
 from typing import Dict, Optional, List
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass
@@ -19,6 +20,8 @@ class EbayListingInfo:
     action: str  # 'update_price', 'end_and_relist', 'relist'
     quantity: Optional[int] = None  # If quantity change specified
     notes: Optional[List[str]] = None  # Special instructions (change header, etc.)
+    blue_text: Optional[List[str]] = None  # Text to ADD/USE (from blue colored text)
+    red_text: Optional[List[str]] = None  # Text to REMOVE (from red colored text)
 
     def __str__(self):
         result = f"Item: {self.item_title}\nID: {self.item_id}\nURL: {self.item_url}"
@@ -28,6 +31,10 @@ class EbayListingInfo:
             result += f"\nQuantity: {self.quantity}"
         if self.notes:
             result += f"\nNotes: {'; '.join(self.notes)}"
+        if self.blue_text:
+            result += f"\nUSE (blue): {'; '.join(self.blue_text)}"
+        if self.red_text:
+            result += f"\nREMOVE (red): {'; '.join(self.red_text)}"
         return result
 
 
@@ -55,6 +62,19 @@ class EmailParser:
         'change the header', 'change the title', 'change the description',
         'use this', 'gallery photo', 'raise to', 'lower to',
     ]
+    # Blue color variations (text to ADD/USE as new header)
+    BLUE_COLORS = [
+        '#0432ff', '#0000ff', '#0000FF', '#0432FF',  # Hex blues
+        'blue', 'Blue', 'BLUE',
+        '#00f', '#00F',  # Short hex
+        'rgb(0,0,255)', 'rgb(4,50,255)',  # RGB blues
+    ]
+    # Red color variations (text to REMOVE)
+    RED_COLORS = [
+        '#ff0000', '#FF0000', '#f00', '#F00',  # Hex reds
+        'red', 'Red', 'RED',
+        'rgb(255,0,0)',  # RGB red
+    ]
 
     def parse_email(self, email_data: Dict) -> Optional[EbayListingInfo]:
         """
@@ -68,6 +88,7 @@ class EmailParser:
         """
         subject = email_data.get('subject', '')
         body = email_data.get('body', '')
+        html_body = email_data.get('html_body', '')
         combined_text = f"{subject}\n{body}"
 
         # Extract eBay URL and item ID
@@ -93,6 +114,9 @@ class EmailParser:
         # Extract special instructions/notes
         notes = self._extract_notes(body)
 
+        # Extract colored text from HTML (blue=use/add, red=remove)
+        blue_text, red_text = self._extract_colored_text(html_body)
+
         # Determine action based on email content
         action = self._determine_action(combined_text)
 
@@ -104,7 +128,9 @@ class EmailParser:
             original_subject=subject,
             action=action,
             quantity=quantity,
-            notes=notes
+            notes=notes,
+            blue_text=blue_text,
+            red_text=red_text
         )
 
     def _clean_ebay_url(self, url: str, item_id: str) -> str:
@@ -178,6 +204,58 @@ class EmailParser:
                     notes.append(instruction)
 
         return notes if notes else None
+
+    def _extract_colored_text(self, html: str) -> tuple:
+        """
+        Extract colored text from HTML email.
+        Blue text = text to USE/ADD (typically new header/title)
+        Red text = text to REMOVE
+
+        Returns:
+            Tuple of (blue_text_list, red_text_list)
+        """
+        if not html:
+            return None, None
+
+        blue_texts = []
+        red_texts = []
+
+        # Pattern to match <font color="...">text</font>
+        font_pattern = r'<font\s+color=["\']([^"\']+)["\']\s*[^>]*>([^<]+)</font>'
+
+        # Pattern to match <span style="color: ...">text</span> and similar
+        style_pattern = r'<(?:span|div|p)[^>]*style=["\'][^"\']*color:\s*([^;"\']+)[^"\']*["\'][^>]*>([^<]+)</(?:span|div|p)>'
+
+        for pattern in [font_pattern, style_pattern]:
+            matches = re.findall(pattern, html, re.IGNORECASE | re.DOTALL)
+            for color, text in matches:
+                # Clean up the text
+                text = unescape(text).strip()
+                if not text or len(text) < 2:
+                    continue
+
+                # Normalize color for comparison
+                color_lower = color.lower().strip()
+
+                # Check if it's a blue color
+                is_blue = any(
+                    blue.lower() in color_lower or color_lower in blue.lower()
+                    for blue in self.BLUE_COLORS
+                )
+
+                # Check if it's a red color
+                is_red = any(
+                    red.lower() in color_lower or color_lower in red.lower()
+                    for red in self.RED_COLORS
+                )
+
+                if is_blue and text not in blue_texts:
+                    blue_texts.append(text)
+                elif is_red and text not in red_texts:
+                    red_texts.append(text)
+
+        return (blue_texts if blue_texts else None,
+                red_texts if red_texts else None)
 
     def _determine_action(self, text: str) -> str:
         """Determine what action to take based on email content."""

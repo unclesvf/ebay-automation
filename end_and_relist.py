@@ -126,6 +126,8 @@ def get_next_batch(reader, limit=5):
                 'price': parsed.new_price,
                 'quantity': parsed.quantity,
                 'notes': parsed.notes,
+                'blue_text': parsed.blue_text,
+                'red_text': parsed.red_text,
             })
         elif not parsed:
             # No eBay URL found - might be an instruction email from Linda
@@ -222,6 +224,12 @@ def main():
             print(f"      >>> QUANTITY: {l['quantity']} <<<")
         if l.get('notes'):
             print(f"      >>> NOTES: {'; '.join(l['notes'])}")
+        if l.get('blue_text'):
+            for bt in l['blue_text']:
+                print(f"      >>> USE (blue): {bt}")
+        if l.get('red_text'):
+            for rt in l['red_text']:
+                print(f"      >>> REMOVE (red): {rt}")
         print()
     print("=" * 70)
 
