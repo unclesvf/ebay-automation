@@ -22,6 +22,7 @@ class EbayListingInfo:
     notes: Optional[List[str]] = None  # Special instructions (change header, etc.)
     blue_text: Optional[List[str]] = None  # Text to ADD/USE (from blue colored text)
     red_text: Optional[List[str]] = None  # Text to REMOVE (from red colored text)
+    needs_review: Optional[str] = None  # Flag for odd cases that need manual review
 
     def __str__(self):
         result = f"Item: {self.item_title}\nID: {self.item_id}\nURL: {self.item_url}"
@@ -35,6 +36,8 @@ class EbayListingInfo:
             result += f"\nUSE (blue): {'; '.join(self.blue_text)}"
         if self.red_text:
             result += f"\nREMOVE (red): {'; '.join(self.red_text)}"
+        if self.needs_review:
+            result += f"\n*** NEEDS REVIEW: {self.needs_review}"
         return result
 
 
@@ -120,6 +123,9 @@ class EmailParser:
         # Determine action based on email content
         action = self._determine_action(combined_text)
 
+        # Check for odd cases that need manual review
+        needs_review = self._check_needs_review(body, notes, blue_text, red_text)
+
         return EbayListingInfo(
             item_url=item_url,
             item_id=item_id,
@@ -130,7 +136,8 @@ class EmailParser:
             quantity=quantity,
             notes=notes,
             blue_text=blue_text,
-            red_text=red_text
+            red_text=red_text,
+            needs_review=needs_review
         )
 
     def _clean_ebay_url(self, url: str, item_id: str) -> str:
@@ -259,6 +266,33 @@ class EmailParser:
 
         return (blue_texts if blue_texts else None,
                 red_texts if red_texts else None)
+
+    def _check_needs_review(self, body: str, notes: Optional[List[str]],
+                            blue_text: Optional[List[str]], red_text: Optional[List[str]]) -> Optional[str]:
+        """
+        Check for odd cases that need manual review.
+        Returns a reason string if review needed, None otherwise.
+        """
+        body_lower = body.lower()
+        reasons = []
+
+        # Check if "change header/title" mentioned but no blue text found
+        header_keywords = ['change header', 'change title', 'new header', 'new title', 'change the header', 'change the title']
+        has_header_instruction = any(kw in body_lower for kw in header_keywords)
+        if has_header_instruction and not blue_text:
+            reasons.append("'change header' mentioned but no blue text found")
+
+        # Check if "change description" or "remove" mentioned but no red text found
+        remove_keywords = ['change description', 'remove', 'delete']
+        has_remove_instruction = any(kw in body_lower for kw in remove_keywords)
+        if has_remove_instruction and not red_text and 'change description' in body_lower:
+            reasons.append("'change description' mentioned but no red text found")
+
+        # Check for unusual patterns that might indicate missed parsing
+        if 'gallery photo' in body_lower:
+            reasons.append("gallery photo change requested - verify manually")
+
+        return '; '.join(reasons) if reasons else None
 
     def _determine_action(self, text: str) -> str:
         """Determine what action to take based on email content."""

@@ -128,6 +128,7 @@ def get_next_batch(reader, limit=5):
                 'notes': parsed.notes,
                 'blue_text': parsed.blue_text,
                 'red_text': parsed.red_text,
+                'needs_review': parsed.needs_review,
             })
         elif not parsed:
             # No eBay URL found - might be an instruction email from Linda
@@ -230,6 +231,8 @@ def main():
         if l.get('red_text'):
             for rt in l['red_text']:
                 print(f"      >>> REMOVE (red): {rt}")
+        if l.get('needs_review'):
+            print(f"      !!! REVIEW NEEDED: {l['needs_review']}")
         print()
     print("=" * 70)
 
