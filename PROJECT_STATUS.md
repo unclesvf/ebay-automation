@@ -21,7 +21,7 @@ Tool to automate eBay listing price updates based on emails from Linda in Outloo
 
 ## Completion Summary
 
-### Completed: 52 items as of January 17, 2026
+### Completed: 52 items as of January 17, 2026 (plus 4 title/quantity corrections)
 
 All price update emails from the Linda folder have been processed using the end → sell similar workflow.
 
@@ -47,6 +47,11 @@ All price update emails from the Linda folder have been processed using the end 
 4. **Colored text extraction from HTML** - Parses Linda's colored text:
    - **Blue text** = New header/title to USE (e.g., `>>> USE (blue): New Title Here`)
    - **Red text** = Text to REMOVE (e.g., `>>> REMOVE (red): Old Text`)
+5. **"Needs Review" flag** - Alerts when parser detects inconsistencies:
+   - "change header" mentioned but no blue text found
+   - "change description" mentioned but no colored text found
+   - Gallery photo changes requested
+   - Displays as: `!!! REVIEW NEEDED: reason`
 
 ---
 
