@@ -3,9 +3,10 @@ End and Relist Script
 Workflow: End listing via eBay help page, then Sell Similar with new price
 
 Usage:
-    python end_and_relist.py          # Show current batch (does NOT mark anything complete)
-    python end_and_relist.py --done   # Mark previous batch complete, then show next batch
-    python end_and_relist.py --test   # Test with just 2 items
+    python end_and_relist.py              # Show current batch (does NOT mark anything complete)
+    python end_and_relist.py --done       # Mark previous batch complete, then show next batch
+    python end_and_relist.py --test       # Test with just 2 items
+    python end_and_relist.py --instructions  # Process instruction emails (bulk changes)
 
 Workflow:
     1. Run script (no flags) to see batch and open pages
@@ -17,6 +18,7 @@ import sys
 import subprocess
 from outlook_reader import OutlookReader
 from email_parser import EmailParser
+from instruction_parser import InstructionParser, generate_seller_hub_url
 from config import OUTLOOK_CONFIG
 
 PENDING_FILE = os.path.join(os.path.dirname(__file__), 'pending_entries.txt')
@@ -159,10 +161,111 @@ def open_pages(listings):
     subprocess.run(' '.join(cmd), shell=True)
 
 
+def handle_instructions(reader):
+    """Handle instruction emails (bulk changes like 'change all coin cards to $7.95')."""
+    folder = reader.get_folder_by_name(OUTLOOK_CONFIG['folder_name'], OUTLOOK_CONFIG['account_email'])
+    if not folder:
+        print(f"Folder '{OUTLOOK_CONFIG['folder_name']}' not found")
+        return
+
+    # Get unread emails
+    emails = reader.read_emails(folder, limit=20, unread_only=True)
+
+    # Filter for instruction emails (no eBay URL)
+    import re
+    ebay_url_pattern = r'https?://(?:www\.)?ebay\.com/itm/\d+'
+
+    instruction_emails = []
+    for email in emails:
+        subject = email.get('subject', '')
+        body = email.get('body', '')
+
+        # Skip reply emails
+        if subject.lower().startswith('re:'):
+            continue
+
+        # Check if it has an eBay item URL - if not, it might be an instruction
+        if not re.search(ebay_url_pattern, body):
+            instruction_emails.append(email)
+
+    if not instruction_emails:
+        print("No instruction emails found.")
+        return
+
+    # Parse each instruction email
+    parser = InstructionParser()
+    parsed_instructions = []
+
+    for email in instruction_emails:
+        subject = email.get('subject', '')
+        body = email.get('body', '')
+
+        parsed = parser.parse(subject, body)
+        if parsed:
+            parsed_instructions.append({
+                'email': email,
+                'parsed': parsed,
+            })
+
+    if not parsed_instructions:
+        print("Found instruction emails but could not parse actionable items.")
+        print("\nRaw instruction emails:")
+        for email in instruction_emails:
+            print(f"  Subject: {email.get('subject', 'No subject')}")
+            print(f"  Body: {email.get('body', '')[:200]}...")
+            print()
+        return
+
+    # Display parsed instructions
+    print()
+    print("=" * 70)
+    print("INSTRUCTION EMAILS - PARSED")
+    print("=" * 70)
+
+    for i, instr in enumerate(parsed_instructions, 1):
+        parsed = instr['parsed']
+        print(f"\n[{i}] {instr['email'].get('subject', 'No subject')}")
+        print(f"    Action: {parsed.action.upper()}")
+        print(f"    Search for: {', '.join(parsed.search_terms)}")
+        if parsed.new_price:
+            print(f"    New price: ${parsed.new_price:.2f}")
+        if parsed.item_count:
+            print(f"    Expected items: ~{parsed.item_count}")
+        if parsed.additional_notes:
+            print(f"    Notes: {parsed.additional_notes}")
+
+    print()
+    print("-" * 70)
+    print("Opening Seller Hub searches in Chrome...")
+    print("-" * 70)
+
+    # Open search URLs
+    urls = []
+    for instr in parsed_instructions:
+        for term in instr['parsed'].search_terms:
+            url = generate_seller_hub_url(term)
+            urls.append(url)
+            print(f"  Search: '{term}'")
+            print(f"  URL: {url}")
+            print()
+
+    if urls:
+        cmd = ['start', 'chrome'] + urls
+        subprocess.run(' '.join(cmd), shell=True)
+
+    print("=" * 70)
+    print("NEXT STEPS:")
+    print("  1. Review search results in Chrome")
+    print("  2. Select matching items and bulk edit")
+    print("  3. Once done, mark instruction emails as read in Outlook")
+    print("=" * 70)
+
+
 def main():
     # Check for flags
     test_mode = '--test' in sys.argv
     mark_done = '--done' in sys.argv
+    instructions_mode = '--instructions' in sys.argv
     batch_size = 2 if test_mode else 5
 
     if test_mode:
@@ -171,6 +274,11 @@ def main():
     reader = OutlookReader()
     if not reader.connect():
         print("Failed to connect to Outlook")
+        return
+
+    # Handle instruction emails mode
+    if instructions_mode:
+        handle_instructions(reader)
         return
 
     # Only mark previous batch as done if --done flag is passed
