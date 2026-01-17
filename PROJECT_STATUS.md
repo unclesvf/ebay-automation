@@ -1,7 +1,7 @@
 # eBay Listing Automation Tool - Project Status
 
-**Last Updated:** January 16, 2026
-**Status:** COMPLETED
+**Last Updated:** January 17, 2026
+**Status:** COMPLETED & ENHANCED
 
 ---
 
@@ -11,21 +11,39 @@ Tool to automate eBay listing price updates based on emails from Linda in Outloo
 
 **Correct Workflow (End & Relist):**
 1. Read unread emails from "Linda" folder in scott@unclesvf.com account
-2. Parse eBay item ID and new price from each email
+2. Parse eBay item ID, price, quantity, and special instructions from each email
 3. Open eBay "End Your Listing" page + item pages in Chrome
 4. End each listing (reason: "error in listing")
-5. Click "Sell Similar" on item page, set new price
-6. Mark processed emails as read / track in completed log
+5. Click "Sell Similar" on item page, set new price (and quantity if specified)
+6. Run with `--done` flag to mark batch complete and get next batch
 
 ---
 
 ## Completion Summary
 
-### Completed: 41 items on January 16, 2026
+### Completed: 52 items as of January 17, 2026
 
 All price update emails from the Linda folder have been processed using the end → sell similar workflow.
 
 **Note:** Initial approach (revising prices) was incorrect. Correct workflow is to END the listing, then use "Sell Similar" to relist at the new price.
+
+---
+
+## January 17, 2026 - Major Bug Fixes & Enhancements
+
+### Bug Fixes
+1. **Price parsing from body only** - Fixed bug where "$1" from item titles like "$1 Rare Brass Koala Bear" was incorrectly parsed as the price. Now extracts prices only from email body.
+
+2. **Explicit completion with --done flag** - Script no longer auto-marks batches complete. Must run with `--done` flag after processing. Prevents items from being accidentally skipped.
+
+3. **Skip reply emails** - Emails starting with "Re:" are now filtered out (these are conversations, not listings).
+
+4. **Surface instruction emails** - Emails from Linda without eBay URLs (general instructions like "change all coin cards to $7.95") are now displayed prominently.
+
+### New Features
+1. **Quantity parsing** - Detects "quantity 2", "qty 2", "list 2 at $9.99" patterns
+2. **Special instructions/notes** - Captures "change header", "change title", "change description", "gallery photo", etc.
+3. **mark_as_unread() method** - Added to OutlookReader for recovery scenarios
 
 ---
 
@@ -56,16 +74,22 @@ cd C:\Users\scott\ebay-automation
 python end_and_relist.py
 ```
 
-**Options:**
-- `python end_and_relist.py` - Process next 5 items
+**Commands:**
+- `python end_and_relist.py` - Show current batch (safe to run anytime, does NOT mark anything complete)
+- `python end_and_relist.py --done` - Mark previous batch complete, then show next batch
 - `python end_and_relist.py --test` - Process only 2 items (for testing)
 
 **Workflow:**
-1. Script opens End Your Listing page (Tab 1) + item pages (Tabs 2+)
-2. Copy item numbers to End Your Listing page, select "error in listing", end each
-3. Go to each item tab, click "Sell Similar", enter the new price shown in terminal
-4. Run script again to mark batch complete and get next batch
-5. Repeat until "No more unread emails" message
+1. Run script (no flags) - opens End Your Listing page (Tab 1) + item pages (Tabs 2+)
+2. Review terminal output for:
+   - Item numbers and prices
+   - **QUANTITY** (if not 1)
+   - **NOTES** (change header, etc.)
+   - **INSTRUCTION EMAILS** (general instructions from Linda)
+3. Copy item numbers to End Your Listing page, select "error in listing", end each
+4. Go to each item tab, click "Sell Similar", enter the new price (and quantity if specified)
+5. Run `python end_and_relist.py --done` to mark batch complete and get next batch
+6. Repeat until "No more unread emails" message
 
 ---
 
@@ -82,18 +106,23 @@ python end_and_relist.py
 ## Technical Notes
 
 ### Email Parser
-- Looks for "List new $XX.XX" pattern in email body
-- Extracts eBay item ID from URL (ebay.com/itm/XXXXXXXXX)
-- Skips emails without valid price (e.g., "end listing" requests)
+- **Prices:** Extracts from email BODY only (not subject) to avoid false matches in item titles
+- **Patterns:** "List new $XX.XX", "New price: $XX.XX", "Price: $XX.XX", or bare "$XX.XX"
+- **Quantity:** Detects "quantity N", "qty N", "list N at $XX.XX"
+- **Notes:** Captures lines containing: change header, change title, change description, gallery photo, raise to, lower to
+- **Item ID:** Extracts from eBay URL (ebay.com/itm/XXXXXXXXX)
+- **Filtering:** Skips "Re:" reply emails, surfaces instruction emails without eBay URLs
 
 ### Outlook COM
 - Uses pywin32 for Outlook automation
+- Methods: mark_as_read(), mark_as_unread(), move_email()
 - Can be unstable after Windows Updates
 - VBA macro approach available as backup (see OutlookMacro.vba)
 
 ### Known Limitations
 - Emails with typos like "List ne $39.50" or "List nw $55.00" may not parse
 - "End listing" or "Decline offer" emails are skipped (no price to extract)
+- Instruction emails (no eBay URL) are surfaced but require manual handling
 
 ---
 
