@@ -67,7 +67,7 @@ class EmailParser:
         '#0432ff', '#0000ff', '#0000FF', '#0432FF',  # Hex blues
         'blue', 'Blue', 'BLUE',
         '#00f', '#00F',  # Short hex
-        'rgb(0,0,255)', 'rgb(4,50,255)',  # RGB blues
+        'rgb(0,0,255)', 'rgb(4,50,255)', 'rgb(4, 50, 255)',  # RGB blues (with/without spaces)
     ]
     # Red color variations (text to REMOVE)
     RED_COLORS = [
@@ -224,9 +224,12 @@ class EmailParser:
         font_pattern = r'<font\s+color=["\']([^"\']+)["\']\s*[^>]*>([^<]+)</font>'
 
         # Pattern to match <span style="color: ...">text</span> and similar
-        style_pattern = r'<(?:span|div|p)[^>]*style=["\'][^"\']*color:\s*([^;"\']+)[^"\']*["\'][^>]*>([^<]+)</(?:span|div|p)>'
+        style_pattern = r'<(?:span|div|p|h1)[^>]*style=["\'][^"\']*color:\s*([^;"\']+)[^"\']*["\'][^>]*>([^<]+)</(?:span|div|p|h1)>'
 
-        for pattern in [font_pattern, style_pattern]:
+        # Pattern for nested spans with style color (Linda sometimes uses this)
+        nested_style_pattern = r'style=["\']color:\s*([^;"\']+)[;"\'][^>]*>([^<]{3,100})<'
+
+        for pattern in [font_pattern, style_pattern, nested_style_pattern]:
             matches = re.findall(pattern, html, re.IGNORECASE | re.DOTALL)
             for color, text in matches:
                 # Clean up the text
