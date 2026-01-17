@@ -52,6 +52,10 @@ All price update emails from the Linda folder have been processed using the end 
    - "change description" mentioned but no colored text found
    - Gallery photo changes requested
    - Displays as: `!!! REVIEW NEEDED: reason`
+6. **Smart instruction handling** (`--instructions` flag) - Parses bulk instruction emails:
+   - Extracts search terms from "change all X to $Y" style emails
+   - Extracts target price and expected item count
+   - Opens Seller Hub with pre-filled searches for easy bulk editing
 
 ---
 
@@ -60,6 +64,7 @@ All price update emails from the Linda folder have been processed using the end 
 | File | Purpose |
 |------|---------|
 | `end_and_relist.py` | **CURRENT SCRIPT** - End listing + Sell Similar workflow |
+| `instruction_parser.py` | Parses bulk instruction emails (change all X to $Y) |
 | `main.py` | Original interactive CLI (deprecated) |
 | `outlook_reader.py` | Outlook COM automation module |
 | `email_parser.py` | Parses eBay URLs and prices from email text |
@@ -85,6 +90,7 @@ python end_and_relist.py
 **Commands:**
 - `python end_and_relist.py` - Show current batch (safe to run anytime, does NOT mark anything complete)
 - `python end_and_relist.py --done` - Mark previous batch complete, then show next batch
+- `python end_and_relist.py --instructions` - Process bulk instruction emails (e.g., "change all X to $Y")
 - `python end_and_relist.py --test` - Process only 2 items (for testing)
 
 **Workflow:**
