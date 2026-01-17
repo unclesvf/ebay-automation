@@ -44,6 +44,9 @@ All price update emails from the Linda folder have been processed using the end 
 1. **Quantity parsing** - Detects "quantity 2", "qty 2", "list 2 at $9.99" patterns
 2. **Special instructions/notes** - Captures "change header", "change title", "change description", "gallery photo", etc.
 3. **mark_as_unread() method** - Added to OutlookReader for recovery scenarios
+4. **Colored text extraction from HTML** - Parses Linda's colored text:
+   - **Blue text** = New header/title to USE (e.g., `>>> USE (blue): New Title Here`)
+   - **Red text** = Text to REMOVE (e.g., `>>> REMOVE (red): Old Text`)
 
 ---
 
