@@ -29,7 +29,35 @@ All price update emails from the Linda folder have been processed using the end 
 
 ---
 
-## January 17, 2026 - Major Bug Fixes & Enhancements
+## January 17, 2026 - Additional Enhancements (Batch 2)
+
+### New Features
+1. **Typo tolerance** - Parser now handles common typos:
+   - "List ne $39.50" (missing 'w')
+   - "List nw $55.00" (transposed letters)
+   - "Raise to $XX", "Lower to $XX", "Change to $XX" patterns
+
+2. **Email preview mode** - When items need review, shows the first 8 lines of the email body so you can see the original context without opening Outlook
+
+3. **Undo/recovery mode** (`--undo` flag) - Remove items from completed list for reprocessing:
+   ```
+   python end_and_relist.py --undo 276715685145 276715685146
+   ```
+
+4. **Statistics tracking** (`--stats` flag) - Track processing counts:
+   - Today's count
+   - This week's count
+   - All-time total
+   - Daily breakdown for last 7 days
+
+5. **Custom batch size** (`--batch N` flag) - Adjust batch size as needed:
+   ```
+   python end_and_relist.py --batch 10  # Process 10 items at a time
+   ```
+
+---
+
+## January 17, 2026 - Major Bug Fixes & Enhancements (Batch 1)
 
 ### Bug Fixes
 1. **Price parsing from body only** - Fixed bug where "$1" from item titles like "$1 Rare Brass Koala Bear" was incorrectly parsed as the price. Now extracts prices only from email body.
@@ -74,6 +102,7 @@ All price update emails from the Linda folder have been processed using the end 
 | `OutlookMacro.vba` | VBA macro for Outlook (backup approach) |
 | `process_export.py` | Processes VBA export (backup approach) |
 | `completed_items.txt` | Log of processed item IDs |
+| `stats.txt` | Processing statistics by date |
 | `requirements.txt` | Python dependencies (installed) |
 
 ---
@@ -92,6 +121,9 @@ python end_and_relist.py
 - `python end_and_relist.py --done` - Mark previous batch complete, then show next batch
 - `python end_and_relist.py --instructions` - Process bulk instruction emails (e.g., "change all X to $Y")
 - `python end_and_relist.py --test` - Process only 2 items (for testing)
+- `python end_and_relist.py --batch N` - Set custom batch size (e.g., `--batch 10` for 10 items)
+- `python end_and_relist.py --stats` - Show processing statistics (today, week, all-time)
+- `python end_and_relist.py --undo ID1 ID2` - Remove items from completed list (for reprocessing)
 
 **Workflow:**
 1. Run script (no flags) - opens End Your Listing page (Tab 1) + item pages (Tabs 2+)

@@ -48,8 +48,12 @@ class EmailParser:
     EBAY_URL_PATTERN = r'https?://(?:www\.)?ebay\.com/itm/(\d+)[^\s<"\']*'
     PRICE_PATTERNS = [
         r'List\s+new\s+\$?([\d,]+\.?\d*)',  # "List new $79.50"
+        r'List\s+n[ew]{1,2}\s+\$?([\d,]+\.?\d*)',  # Typos: "List ne $79.50", "List nw $79.50"
         r'New\s+price[:\s]+\$?([\d,]+\.?\d*)',  # "New price: $79.50"
         r'Price[:\s]+\$?([\d,]+\.?\d*)',  # "Price: $79.50"
+        r'Raise\s+to\s+\$?([\d,]+\.?\d*)',  # "Raise to $79.50"
+        r'Lower\s+to\s+\$?([\d,]+\.?\d*)',  # "Lower to $79.50"
+        r'Change\s+(?:price\s+)?to\s+\$?([\d,]+\.?\d*)',  # "Change to $79.50" or "Change price to $79.50"
         r'\$\s*([\d,]+\.?\d*)',  # Just "$79.50"
     ]
     QUANTITY_PATTERNS = [

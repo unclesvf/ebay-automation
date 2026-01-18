@@ -6,7 +6,10 @@ Usage:
     python end_and_relist.py              # Show current batch (does NOT mark anything complete)
     python end_and_relist.py --done       # Mark previous batch complete, then show next batch
     python end_and_relist.py --test       # Test with just 2 items
+    python end_and_relist.py --batch N    # Set custom batch size (e.g., --batch 10)
     python end_and_relist.py --instructions  # Process instruction emails (bulk changes)
+    python end_and_relist.py --stats      # Show processing statistics
+    python end_and_relist.py --undo ID1 ID2  # Remove items from completed (for reprocessing)
 
 Workflow:
     1. Run script (no flags) to see batch and open pages
@@ -23,6 +26,7 @@ from config import OUTLOOK_CONFIG
 
 PENDING_FILE = os.path.join(os.path.dirname(__file__), 'pending_entries.txt')
 COMPLETED_FILE = os.path.join(os.path.dirname(__file__), 'completed_items.txt')
+STATS_FILE = os.path.join(os.path.dirname(__file__), 'stats.txt')
 END_LISTING_URL = "https://www.ebay.com/help/action?topicid=4146"
 
 
@@ -39,6 +43,95 @@ def save_completed(item_ids):
     with open(COMPLETED_FILE, 'a', encoding='utf-8') as f:
         for item_id in item_ids:
             f.write(f"{item_id}\n")
+    # Update stats
+    update_stats(len(item_ids))
+
+
+def remove_from_completed(item_ids):
+    """Remove item IDs from completed file (for undo)."""
+    if not os.path.exists(COMPLETED_FILE):
+        return 0
+
+    with open(COMPLETED_FILE, 'r', encoding='utf-8') as f:
+        existing = [line.strip() for line in f if line.strip()]
+
+    removed = 0
+    new_list = []
+    for item_id in existing:
+        if item_id in item_ids:
+            removed += 1
+        else:
+            new_list.append(item_id)
+
+    with open(COMPLETED_FILE, 'w', encoding='utf-8') as f:
+        for item_id in new_list:
+            f.write(f"{item_id}\n")
+
+    return removed
+
+
+def update_stats(count):
+    """Update statistics file with processing count."""
+    from datetime import datetime
+    today = datetime.now().strftime('%Y-%m-%d')
+
+    # Load existing stats
+    stats = {}
+    if os.path.exists(STATS_FILE):
+        with open(STATS_FILE, 'r', encoding='utf-8') as f:
+            for line in f:
+                if '|' in line:
+                    date, cnt = line.strip().split('|')
+                    stats[date] = int(cnt)
+
+    # Update today's count
+    stats[today] = stats.get(today, 0) + count
+
+    # Save stats
+    with open(STATS_FILE, 'w', encoding='utf-8') as f:
+        for date in sorted(stats.keys()):
+            f.write(f"{date}|{stats[date]}\n")
+
+
+def show_stats():
+    """Display processing statistics."""
+    from datetime import datetime, timedelta
+
+    if not os.path.exists(STATS_FILE):
+        print("No statistics available yet.")
+        return
+
+    stats = {}
+    with open(STATS_FILE, 'r', encoding='utf-8') as f:
+        for line in f:
+            if '|' in line:
+                date, cnt = line.strip().split('|')
+                stats[date] = int(cnt)
+
+    if not stats:
+        print("No statistics available yet.")
+        return
+
+    today = datetime.now().strftime('%Y-%m-%d')
+    week_ago = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
+
+    # Calculate totals
+    total = sum(stats.values())
+    today_count = stats.get(today, 0)
+    week_count = sum(cnt for date, cnt in stats.items() if date >= week_ago)
+
+    print()
+    print("=" * 40)
+    print("PROCESSING STATISTICS")
+    print("=" * 40)
+    print(f"  Today:      {today_count} items")
+    print(f"  This week:  {week_count} items")
+    print(f"  All time:   {total} items")
+    print()
+    print("Recent activity:")
+    for date in sorted(stats.keys(), reverse=True)[:7]:
+        print(f"  {date}: {stats[date]} items")
+    print("=" * 40)
 
 
 def mark_previous_done(reader):
@@ -131,6 +224,7 @@ def get_next_batch(reader, limit=5):
                 'blue_text': parsed.blue_text,
                 'red_text': parsed.red_text,
                 'needs_review': parsed.needs_review,
+                'body_preview': email.get('body', '')[:500],  # Store preview for review
             })
         elif not parsed:
             # No eBay URL found - might be an instruction email from Linda
@@ -261,19 +355,79 @@ def handle_instructions(reader):
     print("=" * 70)
 
 
+def handle_undo(reader, item_ids):
+    """Handle undo - remove items from completed and mark emails as unread."""
+    if not item_ids:
+        print("Usage: python end_and_relist.py --undo ITEM_ID1 ITEM_ID2 ...")
+        return
+
+    print(f"Attempting to undo {len(item_ids)} items...")
+
+    # Remove from completed file
+    removed = remove_from_completed(item_ids)
+    print(f"  Removed {removed} items from completed log")
+
+    # Note: We can't easily mark the emails as unread without knowing their entry_ids
+    # But at least they're removed from completed so they'll be processed again
+    print(f"\nItems removed from completed list. They will be processed again")
+    print("if their emails are still unread in Outlook.")
+    print("\nIf the emails are already marked as read, you may need to")
+    print("manually mark them as unread in Outlook.")
+
+
+def parse_batch_size(args):
+    """Parse batch size from command line args."""
+    for i, arg in enumerate(args):
+        if arg == '--batch' and i + 1 < len(args):
+            try:
+                return int(args[i + 1])
+            except ValueError:
+                print(f"Invalid batch size: {args[i + 1]}")
+                return None
+    return None
+
+
 def main():
     # Check for flags
     test_mode = '--test' in sys.argv
     mark_done = '--done' in sys.argv
     instructions_mode = '--instructions' in sys.argv
-    batch_size = 2 if test_mode else 5
+    stats_mode = '--stats' in sys.argv
+    undo_mode = '--undo' in sys.argv
+
+    # Parse batch size (default: 5, test mode: 2)
+    custom_batch = parse_batch_size(sys.argv)
+    if custom_batch is not None:
+        batch_size = custom_batch
+    elif test_mode:
+        batch_size = 2
+    else:
+        batch_size = 5
 
     if test_mode:
         print("=== TEST MODE: Processing only 2 items ===\n")
 
+    # Stats mode doesn't need Outlook
+    if stats_mode:
+        show_stats()
+        return
+
     reader = OutlookReader()
     if not reader.connect():
         print("Failed to connect to Outlook")
+        return
+
+    # Handle undo mode
+    if undo_mode:
+        # Get item IDs from args after --undo
+        try:
+            undo_idx = sys.argv.index('--undo')
+            item_ids = sys.argv[undo_idx + 1:]
+            # Filter out other flags
+            item_ids = [x for x in item_ids if not x.startswith('--')]
+        except (ValueError, IndexError):
+            item_ids = []
+        handle_undo(reader, item_ids)
         return
 
     # Handle instruction emails mode
@@ -341,6 +495,14 @@ def main():
                 print(f"      >>> REMOVE (red): {rt}")
         if l.get('needs_review'):
             print(f"      !!! REVIEW NEEDED: {l['needs_review']}")
+            # Show email body preview for items needing review
+            if l.get('body_preview'):
+                print(f"      --- Email Preview ---")
+                preview_lines = l['body_preview'].strip().split('\n')[:8]  # First 8 lines
+                for line in preview_lines:
+                    if line.strip():
+                        print(f"      | {line.strip()[:70]}")
+                print(f"      -----------------------")
         print()
     print("=" * 70)
 
