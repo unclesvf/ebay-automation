@@ -23,6 +23,7 @@ class EbayListingInfo:
     blue_text: Optional[List[str]] = None  # Text to ADD/USE (from blue colored text)
     red_text: Optional[List[str]] = None  # Text to REMOVE (from red colored text)
     needs_review: Optional[str] = None  # Flag for odd cases that need manual review
+    new_title: Optional[str] = None  # Full new title when Linda provides it
 
     def __str__(self):
         result = f"Item: {self.item_title}\nID: {self.item_id}\nURL: {self.item_url}"
@@ -32,6 +33,8 @@ class EbayListingInfo:
             result += f"\nQuantity: {self.quantity}"
         if self.notes:
             result += f"\nNotes: {'; '.join(self.notes)}"
+        if self.new_title:
+            result += f"\nNEW TITLE: {self.new_title}"
         if self.blue_text:
             result += f"\nUSE (blue): {'; '.join(self.blue_text)}"
         if self.red_text:
@@ -121,6 +124,9 @@ class EmailParser:
         # Extract special instructions/notes
         notes = self._extract_notes(body)
 
+        # Extract full new title if Linda provides it
+        new_title = self._extract_new_title(body)
+
         # Extract colored text from HTML (blue=use/add, red=remove)
         blue_text, red_text = self._extract_colored_text(html_body)
 
@@ -141,7 +147,8 @@ class EmailParser:
             notes=notes,
             blue_text=blue_text,
             red_text=red_text,
-            needs_review=needs_review
+            needs_review=needs_review,
+            new_title=new_title
         )
 
     def _clean_ebay_url(self, url: str, item_id: str) -> str:
@@ -215,6 +222,47 @@ class EmailParser:
                     notes.append(instruction)
 
         return notes if notes else None
+
+    def _extract_new_title(self, text: str) -> Optional[str]:
+        """
+        Extract the full new title when Linda provides it after 'add to header' or similar.
+        Linda often formats it as:
+            Add to header
+
+            New Title Text Here
+            More Title Text
+        """
+        lines = text.split('\n')
+
+        # Look for header change indicators
+        header_triggers = ['add to header', 'change header', 'new header', 'change title', 'new title']
+
+        trigger_idx = -1
+        for i, line in enumerate(lines):
+            line_lower = line.lower().strip()
+            if any(trigger in line_lower for trigger in header_triggers):
+                trigger_idx = i
+                break
+
+        if trigger_idx == -1:
+            return None
+
+        # Collect non-empty lines after the trigger (the new title)
+        title_lines = []
+        for line in lines[trigger_idx + 1:]:
+            stripped = line.strip()
+            # Stop at URLs or other markers
+            if stripped.startswith('http') or stripped.startswith('List ') or '$' in stripped:
+                break
+            if stripped and len(stripped) > 2:
+                title_lines.append(stripped)
+            # Usually the title is 1-2 lines
+            if len(title_lines) >= 2:
+                break
+
+        if title_lines:
+            return ' '.join(title_lines)
+        return None
 
     def _extract_colored_text(self, html: str) -> tuple:
         """

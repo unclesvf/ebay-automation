@@ -188,6 +188,7 @@ def get_next_batch(reader, limit=5):
 
     parser = EmailParser()
     listings = []
+    title_only_listings = []  # Emails with eBay URL but no price (title change only)
     instruction_emails = []  # Emails without eBay URLs (instructions from Linda)
 
     for email in emails:
@@ -226,6 +227,20 @@ def get_next_batch(reader, limit=5):
                 'needs_review': parsed.needs_review,
                 'body_preview': email.get('body', '')[:500],  # Store preview for review
             })
+        elif parsed and parsed.new_price is None:
+            # Has eBay URL but no price - title/header change only
+            if parsed.item_id in completed:
+                continue
+            title_only_listings.append({
+                'entry_id': email['entry_id'],
+                'item_id': parsed.item_id,
+                'title': parsed.item_title[:55],
+                'notes': parsed.notes,
+                'blue_text': parsed.blue_text,
+                'red_text': parsed.red_text,
+                'new_title': parsed.new_title,
+                'body_preview': email.get('body', '')[:500],
+            })
         elif not parsed:
             # No eBay URL found - might be an instruction email from Linda
             instruction_emails.append({
@@ -234,12 +249,14 @@ def get_next_batch(reader, limit=5):
                 'entry_id': email['entry_id'],
             })
 
-    # Save pending entries for next run
+    # Save pending entries for next run (both price updates and title-only)
     with open(PENDING_FILE, 'w', encoding='utf-8') as f:
         for l in listings:
             f.write(f"{l['entry_id']}|{l['item_id']}|{l['price']}\n")
+        for l in title_only_listings:
+            f.write(f"{l['entry_id']}|{l['item_id']}|TITLE_ONLY\n")
 
-    return listings, instruction_emails
+    return listings, title_only_listings, instruction_emails
 
 
 def open_pages(listings):
@@ -449,7 +466,7 @@ def main():
             print("      Run with --done flag after completing them.\n")
 
     # Get next batch
-    listings, instruction_emails = get_next_batch(reader, limit=batch_size)
+    listings, title_only_listings, instruction_emails = get_next_batch(reader, limit=batch_size)
 
     # Always show instruction emails first (important messages from Linda)
     if instruction_emails:
@@ -463,8 +480,48 @@ def main():
             print("-" * 50)
         print()
 
+    # Show title-only changes (no price change, just revise title/description)
+    if title_only_listings:
+        print()
+        print("*" * 70)
+        print("TITLE/HEADER CHANGES ONLY (no price change - use REVISE, not End/Relist)")
+        print("*" * 70)
+        for i, l in enumerate(title_only_listings, 1):
+            print(f"\n  [{i}] {l['title']}")
+            print(f"      Item #: {l['item_id']}")
+            print(f"      URL: https://www.ebay.com/itm/{l['item_id']}")
+            if l.get('new_title'):
+                print(f"      *** NEW TITLE: {l['new_title']}")
+            if l.get('notes'):
+                print(f"      >>> NOTES: {'; '.join(l['notes'])}")
+            if l.get('blue_text'):
+                for bt in l['blue_text']:
+                    print(f"      >>> USE (blue): {bt}")
+            if l.get('red_text'):
+                for rt in l['red_text']:
+                    print(f"      >>> REMOVE (red): {rt}")
+            # Only show body preview if no new_title was extracted
+            if not l.get('new_title') and l.get('body_preview'):
+                print(f"      --- Email Preview ---")
+                preview_lines = l['body_preview'].strip().split('\n')[:6]
+                for line in preview_lines:
+                    if line.strip():
+                        print(f"      | {line.strip()[:70]}")
+                print(f"      -----------------------")
+        print()
+        # Open title-only item pages
+        title_urls = [f"https://www.ebay.com/itm/{l['item_id']}" for l in title_only_listings]
+        cmd = ['start', 'chrome'] + title_urls
+        subprocess.run(' '.join(cmd), shell=True)
+        print("Opened title-change items in Chrome. Use REVISE (not End/Relist) for these.")
+        print("*" * 70)
+        print()
+
     if not listings:
-        if instruction_emails:
+        if title_only_listings:
+            print("No price-change listings. Title-only changes shown above.")
+            print("\nWhen done with title changes, run: python end_and_relist.py --done")
+        elif instruction_emails:
             print("No eBay listings to process, but please review the instruction emails above.")
         else:
             print("No more unread emails with eBay price updates!")
