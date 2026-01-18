@@ -55,6 +55,16 @@ All price update emails from the Linda folder have been processed using the end 
    python end_and_relist.py --batch 10  # Process 10 items at a time
    ```
 
+6. **Title-only listing support** - Emails with eBay URL but no price are now shown as a separate category:
+   - Displayed with `***` markers as "TITLE/HEADER CHANGES ONLY"
+   - Uses REVISE workflow (not End/Relist) since price doesn't change
+   - Opens item pages directly for quick editing
+
+7. **Full new title extraction** - When Linda shows the complete new title after "Add to header" or similar:
+   - Extracts and displays the full title with placement already shown
+   - Example: `*** NEW TITLE: Lot 3 Copper 1/2" Fittings Threaded Male Adapters New`
+   - Makes it easy to copy/paste the exact title Linda wants
+
 ---
 
 ## January 17, 2026 - Major Bug Fixes & Enhancements (Batch 1)
