@@ -1,0 +1,803 @@
+"""
+AI Content Extractor - Enhanced extraction for AI Knowledge Management System
+Extracts GitHub repos, HuggingFace models, YouTube tutorials, Midjourney style codes,
+and AI model references from Scott folder emails.
+"""
+import sys
+sys.path.insert(0, r'C:\Users\scott\ebay-automation')
+sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+
+from outlook_reader import OutlookReader
+from datetime import datetime
+import re
+import json
+import os
+import urllib.request
+import time
+
+# Cache for expanded URLs to avoid re-fetching
+_url_cache = {}
+_cache_file = r'D:\AI-Knowledge-Base\url_cache.json'
+
+# Paths
+MASTER_DB_PATH = r'D:\AI-Knowledge-Base\master_db.json'
+TWITTER_JSON_PATH = r'C:\Users\scott\ebay-automation\twitter_data_extract.json'
+
+# =============================================================================
+# EXTRACTION PATTERNS
+# =============================================================================
+
+PATTERNS = {
+    # Repository URLs - capture full path including potential additional segments
+    # Match full URLs first, then the captured groups
+    'github_full': re.compile(r'https?://github\.com/([\w\-\.]+)/([\w\-\.]+)(?:/[\w\-\./]*)?', re.IGNORECASE),
+    'github': re.compile(r'github\.com/([\w\-\.]+)/([\w\-\.]+)', re.IGNORECASE),
+    'huggingface_full': re.compile(r'https?://huggingface\.co/([\w\-\.]+)/([\w\-\.]+)', re.IGNORECASE),
+    'huggingface': re.compile(r'huggingface\.co/([\w\-\.]+)/([\w\-\.]+)', re.IGNORECASE),
+
+    # YouTube URLs
+    'youtube_full': re.compile(r'youtube\.com/watch\?v=([\w\-]+)', re.IGNORECASE),
+    'youtube_short': re.compile(r'youtu\.be/([\w\-]+)', re.IGNORECASE),
+
+    # Midjourney style codes
+    'sref': re.compile(r'--sref\s+(\d+)', re.IGNORECASE),
+    'style': re.compile(r'--style\s+(\w+)', re.IGNORECASE),
+    'niji': re.compile(r'--niji\s*(\d*)', re.IGNORECASE),
+
+    # Full URL extraction (for finding all URLs in text)
+    'any_url': re.compile(r'https?://[^\s<>"\']+', re.IGNORECASE),
+
+    # t.co short links (Twitter/X shortened URLs)
+    'tco': re.compile(r'https?://t\.co/[\w]+', re.IGNORECASE),
+}
+
+# =============================================================================
+# MODEL DETECTION KEYWORDS
+# =============================================================================
+
+TTS_MODELS = [
+    'soprano', 'kokoro', 'bark', 'tortoise', 'xtts', 'coqui',
+    'elevenlabs', 'playht', 'fish speech', 'fishspeech',
+    'parler', 'metavoice', 'openvoice', 'piper', 'silero'
+]
+
+IMAGE_CLOUD_MODELS = [
+    'midjourney', 'niji', 'dall-e', 'dalle', 'grok imagine',
+    'ideogram', 'leonardo', 'bing image', 'adobe firefly',
+    'clipdrop', 'nightcafe', 'playground'
+]
+
+IMAGE_LOCAL_MODELS = [
+    'flux', 'sd3', 'sdxl', 'stable diffusion', 'comfyui', 'comfy ui',
+    'forge', 'a1111', 'automatic1111', 'fooocus', 'invoke',
+    'kohya', 'lora', 'controlnet', 'ip-adapter', 'ltx'
+]
+
+CODING_TOOLS = [
+    'claude code', 'codex', 'gemini cli', 'aider', 'cursor',
+    'windsurf', 'continue', 'cline', 'copilot', 'codeium',
+    'tabnine', 'replit', 'lovable', 'bolt', 'v0', 'vercel'
+]
+
+VIDEO_MODELS = [
+    'sora', 'runway', 'pika', 'kling', 'minimax', 'luma',
+    'ltx', 'mochi', 'hunyuan', 'cogvideox', 'veo'
+]
+
+# =============================================================================
+# URL CACHE FUNCTIONS
+# =============================================================================
+
+def load_url_cache():
+    """Load the URL expansion cache from disk."""
+    global _url_cache
+    if os.path.exists(_cache_file):
+        try:
+            with open(_cache_file, 'r', encoding='utf-8') as f:
+                _url_cache = json.load(f)
+        except:
+            _url_cache = {}
+    return _url_cache
+
+def save_url_cache():
+    """Save the URL expansion cache to disk."""
+    with open(_cache_file, 'w', encoding='utf-8') as f:
+        json.dump(_url_cache, f, indent=2)
+
+def expand_tco_url(short_url, timeout=5):
+    """
+    Expand a t.co shortened URL by following redirects.
+    Returns the final URL or None if expansion fails.
+    """
+    global _url_cache
+
+    # Check cache first
+    if short_url in _url_cache:
+        return _url_cache[short_url]
+
+    try:
+        # Create a request that follows redirects
+        req = urllib.request.Request(
+            short_url,
+            headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+        )
+
+        # Use HEAD request to just get the redirect without downloading content
+        req.get_method = lambda: 'HEAD'
+
+        with urllib.request.urlopen(req, timeout=timeout) as response:
+            final_url = response.geturl()
+            _url_cache[short_url] = final_url
+            return final_url
+
+    except urllib.request.HTTPError as e:
+        # Some servers don't support HEAD, try GET
+        try:
+            req = urllib.request.Request(
+                short_url,
+                headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+            )
+            with urllib.request.urlopen(req, timeout=timeout) as response:
+                final_url = response.geturl()
+                _url_cache[short_url] = final_url
+                return final_url
+        except:
+            _url_cache[short_url] = None
+            return None
+
+    except Exception as e:
+        _url_cache[short_url] = None
+        return None
+
+def extract_tco_urls(text):
+    """Extract all t.co URLs from text."""
+    return list(set(PATTERNS['tco'].findall(text)))
+
+def expand_all_tco_urls(text, verbose=False):
+    """
+    Find all t.co URLs in text and expand them.
+    Returns a dict mapping short URLs to expanded URLs.
+    """
+    tco_urls = extract_tco_urls(text)
+    expanded = {}
+
+    for url in tco_urls:
+        if verbose:
+            print(f"    Expanding: {url}...", end=' ', flush=True)
+
+        final_url = expand_tco_url(url)
+
+        if final_url and final_url != url:
+            expanded[url] = final_url
+            if verbose:
+                # Show just the domain and path
+                short_display = final_url[:60] + '...' if len(final_url) > 60 else final_url
+                print(f"-> {short_display}")
+        else:
+            if verbose:
+                print("(failed)")
+
+        # Small delay to be nice to servers
+        time.sleep(0.1)
+
+    return expanded
+
+# =============================================================================
+# EXTRACTION FUNCTIONS
+# =============================================================================
+
+def clean_url_ending(url):
+    """Clean up URL endings - remove trailing punctuation, ellipsis, etc."""
+    # Remove common trailing characters
+    while url and url[-1] in '.,;:!?)]\u2026>':
+        url = url[:-1]
+    # Remove ellipsis character
+    url = url.rstrip('\u2026')
+    return url
+
+def extract_github_repos(text):
+    """Extract GitHub repository references."""
+    repos = []
+    seen = set()
+
+    # First try full URL pattern
+    for match in PATTERNS['github_full'].finditer(text):
+        owner, repo = match.groups()[:2]
+        # Clean up repo name
+        repo = clean_url_ending(repo)
+        # Skip user profiles, status pages, truncated URLs
+        if repo and not repo.startswith('status') and len(repo) > 2:
+            full_url = f"github.com/{owner}/{repo}"
+            if full_url not in seen:
+                seen.add(full_url)
+                repos.append({
+                    'url': full_url,
+                    'owner': owner,
+                    'repo': repo,
+                    'date_found': datetime.now().strftime('%Y-%m-%d')
+                })
+
+    # Also try basic pattern for any we missed
+    for match in PATTERNS['github'].finditer(text):
+        owner, repo = match.groups()
+        repo = clean_url_ending(repo)
+        if repo and not repo.startswith('status') and len(repo) > 2:
+            full_url = f"github.com/{owner}/{repo}"
+            if full_url not in seen:
+                seen.add(full_url)
+                repos.append({
+                    'url': full_url,
+                    'owner': owner,
+                    'repo': repo,
+                    'date_found': datetime.now().strftime('%Y-%m-%d')
+                })
+
+    return repos
+
+def extract_huggingface_refs(text):
+    """Extract HuggingFace model/dataset references."""
+    refs = []
+    seen = set()
+
+    # Try full URL pattern first
+    for match in PATTERNS['huggingface_full'].finditer(text):
+        owner, item = match.groups()
+        item = clean_url_ending(item)
+        if item and len(item) > 2:
+            full_url = f"huggingface.co/{owner}/{item}"
+            if full_url not in seen:
+                seen.add(full_url)
+                refs.append({
+                    'url': full_url,
+                    'owner': owner,
+                    'item': item,
+                    'date_found': datetime.now().strftime('%Y-%m-%d')
+                })
+
+    # Also try basic pattern
+    for match in PATTERNS['huggingface'].finditer(text):
+        owner, item = match.groups()
+        item = clean_url_ending(item)
+        if item and len(item) > 2:
+            full_url = f"huggingface.co/{owner}/{item}"
+            if full_url not in seen:
+                seen.add(full_url)
+                refs.append({
+                    'url': full_url,
+                    'owner': owner,
+                    'item': item,
+                    'date_found': datetime.now().strftime('%Y-%m-%d')
+                })
+
+    return refs
+
+def extract_youtube_urls(text):
+    """Extract YouTube video URLs."""
+    videos = []
+
+    # Full YouTube URLs
+    for match in PATTERNS['youtube_full'].finditer(text):
+        video_id = match.group(1)
+        videos.append({
+            'video_id': video_id,
+            'url': f"youtube.com/watch?v={video_id}",
+            'date_found': datetime.now().strftime('%Y-%m-%d')
+        })
+
+    # Short YouTube URLs
+    for match in PATTERNS['youtube_short'].finditer(text):
+        video_id = match.group(1)
+        videos.append({
+            'video_id': video_id,
+            'url': f"youtu.be/{video_id}",
+            'date_found': datetime.now().strftime('%Y-%m-%d')
+        })
+
+    # Dedupe by video_id
+    seen = set()
+    unique = []
+    for v in videos:
+        if v['video_id'] not in seen:
+            seen.add(v['video_id'])
+            unique.append(v)
+
+    return unique
+
+def extract_style_codes(text):
+    """Extract Midjourney --sref and --style codes."""
+    codes = {
+        'sref': [],
+        'style': [],
+        'niji': []
+    }
+
+    for match in PATTERNS['sref'].finditer(text):
+        codes['sref'].append(match.group(1))
+
+    for match in PATTERNS['style'].finditer(text):
+        codes['style'].append(match.group(1))
+
+    for match in PATTERNS['niji'].finditer(text):
+        version = match.group(1) or '6'
+        codes['niji'].append(version)
+
+    return codes
+
+def detect_models(text):
+    """Detect AI model mentions in text."""
+    text_lower = text.lower()
+    detected = {
+        'tts': [],
+        'image_cloud': [],
+        'image_local': [],
+        'coding_tools': [],
+        'video': []
+    }
+
+    for model in TTS_MODELS:
+        if model in text_lower:
+            detected['tts'].append(model.title())
+
+    for model in IMAGE_CLOUD_MODELS:
+        if model in text_lower:
+            detected['image_cloud'].append(model.title())
+
+    for model in IMAGE_LOCAL_MODELS:
+        if model in text_lower:
+            detected['image_local'].append(model.title())
+
+    for tool in CODING_TOOLS:
+        if tool in text_lower:
+            detected['coding_tools'].append(tool.title())
+
+    for model in VIDEO_MODELS:
+        if model in text_lower:
+            detected['video'].append(model.title())
+
+    return detected
+
+def extract_all_from_text(text, source_info=None, expand_tco=False, verbose=False):
+    """
+    Extract all patterns from a text block.
+    If expand_tco=True, also expands t.co links and extracts from those.
+    """
+    # Start with direct extraction from text
+    github_repos = extract_github_repos(text)
+    huggingface_refs = extract_huggingface_refs(text)
+    youtube_videos = extract_youtube_urls(text)
+
+    # If t.co expansion is enabled, expand those URLs and extract from them too
+    expanded_urls = []
+    if expand_tco:
+        tco_expanded = expand_all_tco_urls(text, verbose=verbose)
+        for short_url, full_url in tco_expanded.items():
+            if full_url:
+                expanded_urls.append(full_url)
+                # Extract from the expanded URL
+                github_repos.extend(extract_github_repos(full_url))
+                huggingface_refs.extend(extract_huggingface_refs(full_url))
+                youtube_videos.extend(extract_youtube_urls(full_url))
+
+    # Deduplicate
+    seen_github = set()
+    unique_github = []
+    for r in github_repos:
+        if r['url'] not in seen_github:
+            seen_github.add(r['url'])
+            unique_github.append(r)
+
+    seen_hf = set()
+    unique_hf = []
+    for r in huggingface_refs:
+        if r['url'] not in seen_hf:
+            seen_hf.add(r['url'])
+            unique_hf.append(r)
+
+    seen_yt = set()
+    unique_yt = []
+    for v in youtube_videos:
+        if v['video_id'] not in seen_yt:
+            seen_yt.add(v['video_id'])
+            unique_yt.append(v)
+
+    result = {
+        'github_repos': unique_github,
+        'huggingface_refs': unique_hf,
+        'youtube_videos': unique_yt,
+        'style_codes': extract_style_codes(text),
+        'models_detected': detect_models(text),
+        'expanded_urls': expanded_urls,
+        'source': source_info
+    }
+    return result
+
+# =============================================================================
+# DATABASE FUNCTIONS
+# =============================================================================
+
+def load_master_db():
+    """Load the master database."""
+    if os.path.exists(MASTER_DB_PATH):
+        with open(MASTER_DB_PATH, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    return None
+
+def save_master_db(db):
+    """Save the master database."""
+    db['metadata']['last_updated'] = datetime.now().strftime('%Y-%m-%d')
+    with open(MASTER_DB_PATH, 'w', encoding='utf-8') as f:
+        json.dump(db, f, indent=2, ensure_ascii=False)
+    print(f"Saved master_db.json with {db['metadata']['total_entries']} entries")
+
+def add_to_db(db, extractions, source_text=""):
+    """Add extracted content to the database."""
+    added = 0
+
+    # Add GitHub repos
+    for repo in extractions['github_repos']:
+        existing_urls = [r['url'] for r in db['repositories']['github']]
+        if repo['url'] not in existing_urls:
+            db['repositories']['github'].append({
+                'url': repo['url'],
+                'name': repo['repo'],
+                'owner': repo['owner'],
+                'category': 'unknown',
+                'date_found': repo['date_found'],
+                'source': extractions.get('source', {})
+            })
+            added += 1
+
+    # Add HuggingFace refs
+    for ref in extractions['huggingface_refs']:
+        existing_urls = [r['url'] for r in db['repositories']['huggingface']]
+        if ref['url'] not in existing_urls:
+            db['repositories']['huggingface'].append({
+                'url': ref['url'],
+                'name': ref['item'],
+                'owner': ref['owner'],
+                'date_found': ref['date_found'],
+                'source': extractions.get('source', {})
+            })
+            added += 1
+
+    # Add YouTube tutorials
+    for video in extractions['youtube_videos']:
+        existing_ids = [t.get('video_id') for t in db['tutorials']]
+        if video['video_id'] not in existing_ids:
+            db['tutorials'].append({
+                'video_id': video['video_id'],
+                'url': video['url'],
+                'title': None,  # To be fetched later
+                'topic': 'unknown',
+                'date_found': video['date_found'],
+                'source': extractions.get('source', {})
+            })
+            added += 1
+
+    # Add Midjourney sref codes
+    for code in extractions['style_codes']['sref']:
+        existing_codes = [s['code'] for s in db['styles']['midjourney_sref']]
+        if code not in existing_codes:
+            db['styles']['midjourney_sref'].append({
+                'code': code,
+                'description': None,
+                'date_found': datetime.now().strftime('%Y-%m-%d'),
+                'source': extractions.get('source', {})
+            })
+            added += 1
+
+    # Update total entries
+    db['metadata']['total_entries'] = (
+        len(db['repositories']['github']) +
+        len(db['repositories']['huggingface']) +
+        len(db['tutorials']) +
+        len(db['styles']['midjourney_sref']) +
+        len(db['models']['tts']) +
+        len(db['models']['image_cloud']) +
+        len(db['models']['image_local'])
+    )
+
+    return added
+
+# =============================================================================
+# MAIN PROCESSING
+# =============================================================================
+
+def process_existing_json():
+    """Process existing twitter_data_extract.json to populate master_db."""
+    print("=" * 80)
+    print("PROCESSING EXISTING TWITTER DATA")
+    print("=" * 80)
+
+    if not os.path.exists(TWITTER_JSON_PATH):
+        print(f"Twitter JSON not found: {TWITTER_JSON_PATH}")
+        return
+
+    with open(TWITTER_JSON_PATH, 'r', encoding='utf-8') as f:
+        twitter_data = json.load(f)
+
+    db = load_master_db()
+    if not db:
+        print("Master DB not found!")
+        return
+
+    total_added = 0
+
+    for entry in twitter_data:
+        text = f"{entry.get('subject', '')} {entry.get('content', '')}"
+        source_info = {
+            'type': 'twitter_email',
+            'author': entry.get('author', ''),
+            'date': entry.get('date', ''),
+            'subject': entry.get('subject', '')
+        }
+
+        extractions = extract_all_from_text(text, source_info)
+        added = add_to_db(db, extractions, text)
+
+        if added > 0:
+            print(f"  [{entry.get('date')}] Added {added} items from: {entry.get('author', 'Unknown')[:30]}")
+            total_added += added
+
+    save_master_db(db)
+
+    print("\n" + "-" * 80)
+    print("SUMMARY")
+    print("-" * 80)
+    print(f"Processed {len(twitter_data)} emails")
+    print(f"Added {total_added} new entries to master_db")
+    print(f"GitHub repos: {len(db['repositories']['github'])}")
+    print(f"HuggingFace refs: {len(db['repositories']['huggingface'])}")
+    print(f"YouTube tutorials: {len(db['tutorials'])}")
+    print(f"Midjourney sref codes: {len(db['styles']['midjourney_sref'])}")
+
+def process_outlook_emails():
+    """Process emails directly from Outlook Scott folder."""
+    print("=" * 80)
+    print("PROCESSING OUTLOOK EMAILS")
+    print("=" * 80)
+
+    reader = OutlookReader()
+    if not reader.connect():
+        print("ERROR: Failed to connect to Outlook")
+        return
+
+    db = load_master_db()
+    if not db:
+        print("Master DB not found!")
+        return
+
+    # Get X-Twitter Posts folder
+    folder = reader.get_folder_by_name("scott", "scott@unclesvf.com")
+    if not folder:
+        print("ERROR: Could not find 'scott' folder")
+        return
+
+    # Find X-Twitter Posts subfolder
+    twitter_folder = None
+    for sf in folder.Folders:
+        if sf.Name == 'X-Twitter Posts':
+            twitter_folder = sf
+            break
+
+    if not twitter_folder:
+        print("ERROR: Could not find 'X-Twitter Posts' subfolder")
+        return
+
+    print(f"Found {twitter_folder.Items.Count} items in X-Twitter Posts")
+
+    total_added = 0
+    items = twitter_folder.Items
+    items.Sort("[ReceivedTime]", True)
+
+    for item in items:
+        if item.Class != 43:  # Not a mail item
+            continue
+
+        try:
+            subject = item.Subject or ''
+            body = item.Body or ''
+            text = f"{subject} {body}"
+
+            source_info = {
+                'type': 'outlook_email',
+                'subject': subject[:100],
+                'date': str(item.ReceivedTime)[:10]
+            }
+
+            extractions = extract_all_from_text(text, source_info)
+            added = add_to_db(db, extractions, text)
+
+            if added > 0:
+                author = subject.replace('Post by ', '').split(' on X')[0]
+                print(f"  [{source_info['date']}] Added {added} items from: {author[:30]}")
+                total_added += added
+
+        except Exception as e:
+            pass
+
+    save_master_db(db)
+
+    print("\n" + "-" * 80)
+    print("SUMMARY")
+    print("-" * 80)
+    print(f"Added {total_added} new entries to master_db")
+    print(f"GitHub repos: {len(db['repositories']['github'])}")
+    print(f"HuggingFace refs: {len(db['repositories']['huggingface'])}")
+    print(f"YouTube tutorials: {len(db['tutorials'])}")
+    print(f"Midjourney sref codes: {len(db['styles']['midjourney_sref'])}")
+
+def show_stats():
+    """Show current database statistics."""
+    print("=" * 80)
+    print("AI KNOWLEDGE BASE STATISTICS")
+    print("=" * 80)
+
+    db = load_master_db()
+    if not db:
+        print("Master DB not found!")
+        return
+
+    print(f"\nLast updated: {db['metadata']['last_updated']}")
+    print(f"Total entries: {db['metadata']['total_entries']}")
+
+    print("\n" + "-" * 40)
+    print("REPOSITORIES")
+    print("-" * 40)
+    print(f"  GitHub repos: {len(db['repositories']['github'])}")
+    for repo in db['repositories']['github'][:5]:
+        print(f"    - {repo['url']}")
+    if len(db['repositories']['github']) > 5:
+        print(f"    ... and {len(db['repositories']['github']) - 5} more")
+
+    print(f"\n  HuggingFace refs: {len(db['repositories']['huggingface'])}")
+    for ref in db['repositories']['huggingface'][:5]:
+        print(f"    - {ref['url']}")
+    if len(db['repositories']['huggingface']) > 5:
+        print(f"    ... and {len(db['repositories']['huggingface']) - 5} more")
+
+    print("\n" + "-" * 40)
+    print("TUTORIALS")
+    print("-" * 40)
+    print(f"  YouTube videos: {len(db['tutorials'])}")
+    for vid in db['tutorials'][:5]:
+        print(f"    - {vid['url']}")
+    if len(db['tutorials']) > 5:
+        print(f"    ... and {len(db['tutorials']) - 5} more")
+
+    print("\n" + "-" * 40)
+    print("STYLES")
+    print("-" * 40)
+    print(f"  Midjourney sref codes: {len(db['styles']['midjourney_sref'])}")
+    for style in db['styles']['midjourney_sref'][:5]:
+        print(f"    - --sref {style['code']}")
+    if len(db['styles']['midjourney_sref']) > 5:
+        print(f"    ... and {len(db['styles']['midjourney_sref']) - 5} more")
+
+def process_with_tco_expansion():
+    """Process emails with t.co link expansion enabled."""
+    print("=" * 80)
+    print("PROCESSING WITH T.CO LINK EXPANSION")
+    print("=" * 80)
+
+    # Load URL cache
+    load_url_cache()
+
+    if not os.path.exists(TWITTER_JSON_PATH):
+        print(f"Twitter JSON not found: {TWITTER_JSON_PATH}")
+        return
+
+    with open(TWITTER_JSON_PATH, 'r', encoding='utf-8') as f:
+        twitter_data = json.load(f)
+
+    db = load_master_db()
+    if not db:
+        print("Master DB not found!")
+        return
+
+    total_added = 0
+    total_expanded = 0
+
+    for i, entry in enumerate(twitter_data):
+        text = f"{entry.get('subject', '')} {entry.get('content', '')}"
+
+        # Check if there are any t.co URLs - from text OR from the tco_urls field
+        tco_urls = extract_tco_urls(text)
+
+        # Also check the tco_urls field in the JSON data
+        json_tco_urls = entry.get('tco_urls', [])
+        if json_tco_urls:
+            tco_urls.extend(json_tco_urls)
+            tco_urls = list(set(tco_urls))  # Dedupe
+
+        if not tco_urls:
+            continue
+
+        print(f"\n[{i+1}/{len(twitter_data)}] {entry.get('author', 'Unknown')[:30]}")
+        print(f"  Found {len(tco_urls)} t.co links")
+
+        source_info = {
+            'type': 'twitter_email',
+            'author': entry.get('author', ''),
+            'date': entry.get('date', ''),
+            'subject': entry.get('subject', '')
+        }
+
+        # Expand t.co URLs directly (including those from JSON field)
+        expanded_urls = []
+        for tco_url in tco_urls:
+            print(f"    Expanding: {tco_url}...", end=' ', flush=True)
+            final_url = expand_tco_url(tco_url)
+            if final_url and final_url != tco_url:
+                expanded_urls.append(final_url)
+                short_display = final_url[:60] + '...' if len(final_url) > 60 else final_url
+                print(f"-> {short_display}")
+            else:
+                print("(failed)")
+            time.sleep(0.1)
+
+        # Now extract from both original text and expanded URLs
+        extractions = extract_all_from_text(text, source_info, expand_tco=False)
+
+        # Also extract from expanded URLs
+        for url in expanded_urls:
+            extractions['github_repos'].extend(extract_github_repos(url))
+            extractions['huggingface_refs'].extend(extract_huggingface_refs(url))
+            extractions['youtube_videos'].extend(extract_youtube_urls(url))
+
+        added = add_to_db(db, extractions, text)
+        total_expanded += len(expanded_urls)
+
+        if added > 0:
+            print(f"  -> Added {added} new items")
+            total_added += added
+
+    # Save cache and database
+    save_url_cache()
+    save_master_db(db)
+
+    print("\n" + "-" * 80)
+    print("SUMMARY")
+    print("-" * 80)
+    print(f"Processed {len(twitter_data)} emails")
+    print(f"Expanded {total_expanded} t.co links")
+    print(f"Added {total_added} new entries to master_db")
+    print(f"GitHub repos: {len(db['repositories']['github'])}")
+    print(f"HuggingFace refs: {len(db['repositories']['huggingface'])}")
+    print(f"YouTube tutorials: {len(db['tutorials'])}")
+    print(f"Midjourney sref codes: {len(db['styles']['midjourney_sref'])}")
+    print(f"\nURL cache saved to: {_cache_file}")
+
+def main():
+    """Main entry point."""
+    import sys
+
+    if len(sys.argv) > 1:
+        cmd = sys.argv[1]
+        if cmd == '--json':
+            process_existing_json()
+        elif cmd == '--outlook':
+            process_outlook_emails()
+        elif cmd == '--stats':
+            show_stats()
+        elif cmd == '--all':
+            process_existing_json()
+            print("\n")
+            process_outlook_emails()
+        elif cmd == '--expand':
+            process_with_tco_expansion()
+        else:
+            print("Usage:")
+            print("  python ai_content_extractor.py --json     Process twitter_data_extract.json")
+            print("  python ai_content_extractor.py --outlook  Process Outlook emails directly")
+            print("  python ai_content_extractor.py --stats    Show database statistics")
+            print("  python ai_content_extractor.py --all      Process both sources")
+            print("  python ai_content_extractor.py --expand   Process with t.co link expansion")
+    else:
+        # Default: process JSON first, then show stats
+        process_existing_json()
+        print("\n")
+        show_stats()
+
+if __name__ == "__main__":
+    main()
