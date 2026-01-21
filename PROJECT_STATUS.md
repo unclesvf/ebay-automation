@@ -1,7 +1,132 @@
 # eBay Listing Automation Tool - Project Status
 
-**Last Updated:** January 17, 2026
+**Last Updated:** January 20, 2026
 **Status:** COMPLETED & ENHANCED
+
+---
+
+## January 20, 2026 (Session 3) - Critical Classification Bug Fix
+
+### Critical Bug Fix
+1. **"List new and raise to $X" was misclassified as PRICE REVISION** - The `_is_price_revision()` method checked for "raise to" BEFORE "list new", causing emails like "List new and raise to $69.50" to be incorrectly treated as price revisions (just change price) instead of END & RELIST.
+
+   **Root cause:** Pattern matching order was wrong:
+   ```python
+   # OLD (buggy): checked "raise to" first
+   if re.search(r'\braise\s+to\s+\$?[\d,]+', text_lower):
+       return True  # WRONG - matched before checking "list new"
+   ```
+
+   **Fix:** Check for "list new" FIRST:
+   ```python
+   # NEW (fixed): check "list new" first
+   if re.search(r'\blist\s+new\b', text_lower):
+       return False  # Correct - END & RELIST, not price revision
+   ```
+
+   **Impact:** 25+ items were processed incorrectly (price revised instead of ended/relisted). User had to manually end and relist all affected items.
+
+### New Feature
+2. **Follow-up email auto-detection** - When Linda sends a follow-up email for an already-completed item with new instructions:
+   - Script detects the newer unread email
+   - Prints a warning: "*** FOLLOW-UP EMAILS DETECTED ***"
+   - Automatically removes item from completed list
+   - Includes item in current batch with the NEW instructions
+
+### Classification Rules (Clarified)
+| Email Text | Classification |
+|------------|----------------|
+| "List new and raise to $X" | END & RELIST |
+| "List new $X" | END & RELIST |
+| "Raise to $X" (no "list new") | PRICE REVISION |
+| "Lower to $X" (no "list new") | PRICE REVISION |
+
+### Files Modified
+- `email_parser.py` - Fixed `_is_price_revision()` to check "list new" before "raise to"
+- `end_and_relist.py` - Added follow-up email detection in `get_next_batch()`
+
+### Statistics
+- **Session:** 55 items processed + 25 items re-done due to bug
+- **Today total:** 55 items
+
+---
+
+## January 20, 2026 (Session 2) - Title-Only Tracking & Gallery Photo Features
+
+### Bug Fix
+1. **Title-only items now tracked by `--done` flag** - Previously, title-only items (Add Silver, NEW TITLE, etc.) were NOT tracked and required manual marking as read in Outlook. Now:
+   - Title-only items are saved to `title_pending_entries.txt`
+   - Running `--done` marks both price items AND title-only items as complete
+   - Both types are marked as read in Outlook and logged to `completed_items.txt`
+
+### New Features
+1. **Pending Items Verification Table** - When running without `--done`, shows a full table of pending items:
+   - Displays Item ID, Price/Type for each pending item
+   - Shows eBay links for easy verification
+   - Helps user confirm items are actually completed before marking done
+
+2. **Gallery Photo Info Pages** - When Linda's email mentions "gallery photo":
+   - Creates an HTML info page with the email body and instructions
+   - Opens the info page in Chrome BEFORE the item's eBay page
+   - Makes it easy to see what photo change is needed
+
+3. **Fixed ebay-linda Skill** - Simplified skill.md to avoid bash parsing errors with inline backticks
+
+### Files Modified
+- `end_and_relist.py` - Added `TITLE_PENDING_FILE`, `GALLERY_INFO_DIR`, pending verification table, gallery photo info pages
+- `.claude/skills/ebay-linda/skill.md` - Simplified to avoid parsing errors
+- `.claude/skills/ebay-linda/REFERENCE.md` - Updated file tracking documentation
+
+---
+
+## January 20, 2026 (Session 1) - Major Fixes & UI Improvements
+
+### Critical Bug Fix
+1. **REVISE vs END & RELIST separation** - Previously ALL price items were treated as END & RELIST. Now correctly separates:
+   - **"Raise to $X"** or **"Lower to $X"** = **REVISE** (just change the price, do NOT end listing)
+   - **"List new $X"** = **END & RELIST** (end listing, then Sell Similar with new price)
+   - Added `is_price_revision` field to `EbayListingInfo` dataclass
+   - Added `_is_price_revision()` method to detect Raise/Lower patterns
+
+### UI Improvements
+1. **Compact table format** - Each item now shows on 2-3 lines:
+   ```
+   [1] 277385925984 | NEW PRICE: $150.00 | REVISE
+       TITLE:  Silver Souvenir Spoon AUDITORIUM Long Beach
+       ACTION: Raise to $150.00
+   ```
+2. **Separate sections** - PRICE REVISIONS and END & RELIST shown in separate sections with different Chrome windows
+3. **All fields visible** - Tab #, Item ID, Title, New Price, Type (REVISE/LIST NEW), Action
+
+### New Features
+1. **Buyer blocking** - When "block" is detected in notes:
+   - Opens eBay Buyer Block page (https://www.ebay.com/bmgt/BuyerBlock)
+   - Extracts and displays buyer username from email
+   - Added `buyer_username` field and `_extract_buyer_username()` method
+
+### Files Modified
+- `email_parser.py` - Added `is_price_revision`, `buyer_username` fields and detection methods
+- `end_and_relist.py` - Complete UI rewrite, separated REVISE from END & RELIST sections
+
+### Statistics (at time of session)
+- **Session:** 4 items processed
+- **Running total:** 184 items
+
+---
+
+## January 18, 2026 - Bug Fixes
+
+### Bug Fixes
+1. **"List new" without price now handled correctly** - Emails that say "List new" followed by a URL (but no price) were incorrectly categorized as "title-only/REVISE" items. They are now correctly treated as End/Relist items with "(Current Price)" displayed.
+
+2. **Title-only items no longer auto-marked as done** - Previously, running `--done` would mark ALL pending items complete, including "title-only" items that may not have displayed properly. Now:
+   - Only End/Relist items are tracked in the pending file
+   - Title-only items are shown separately with a note to mark them read manually in Outlook
+   - Running `--done` only marks the End/Relist items as complete
+
+### Files Modified
+- `email_parser.py` - Added `relist_current_price` flag and `_is_list_new_no_price()` method
+- `end_and_relist.py` - Updated pending file logic and display handling
 
 ---
 
@@ -21,7 +146,7 @@ Tool to automate eBay listing price updates based on emails from Linda in Outloo
 
 ## Completion Summary
 
-### Completed: 52 items as of January 17, 2026 (plus 4 title/quantity corrections)
+### Completed: 235 items as of January 20, 2026
 
 All price update emails from the Linda folder have been processed using the end → sell similar workflow.
 
@@ -176,7 +301,6 @@ python end_and_relist.py
 - VBA macro approach available as backup (see OutlookMacro.vba)
 
 ### Known Limitations
-- Emails with typos like "List ne $39.50" or "List nw $55.00" may not parse
 - "End listing" or "Decline offer" emails are skipped (no price to extract)
 - Instruction emails (no eBay URL) are surfaced but require manual handling
 
