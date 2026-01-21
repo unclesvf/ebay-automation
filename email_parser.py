@@ -24,6 +24,9 @@ class EbayListingInfo:
     red_text: Optional[List[str]] = None  # Text to REMOVE (from red colored text)
     needs_review: Optional[str] = None  # Flag for odd cases that need manual review
     new_title: Optional[str] = None  # Full new title when Linda provides it
+    relist_current_price: bool = False  # True when "List new" without price (use current)
+    buyer_username: Optional[str] = None  # Buyer username (for blocking)
+    is_price_revision: bool = False  # True for "Raise to" or "Lower to" (REVISE, not end/relist)
 
     def __str__(self):
         result = f"Item: {self.item_title}\nID: {self.item_id}\nURL: {self.item_url}"
@@ -72,6 +75,17 @@ class EmailParser:
         'change the header', 'change the title', 'change the description',
         'use this', 'gallery photo', 'raise to', 'lower to',
     ]
+    # Patterns to extract buyer username from eBay emails
+    BUYER_PATTERNS = [
+        r'from\s+([a-zA-Z0-9_\-\.]+)\s+regarding',  # "from buyer_name regarding"
+        r'Message from\s+([a-zA-Z0-9_\-\.]+)',  # "Message from buyer_name"
+        r'You received .+ from\s+([a-zA-Z0-9_\-\.]+)',  # "You received a message from buyer"
+        r'([a-zA-Z0-9_\-\.]+)\s+sent you',  # "buyer_name sent you"
+        r'([a-zA-Z0-9_\-\.]+)\s+made an offer',  # "buyer_name made an offer"
+        r'([a-zA-Z0-9_\-\.]+)\s+has made',  # "buyer_name has made"
+        r'Buyer:\s*([a-zA-Z0-9_\-\.]+)',  # "Buyer: buyer_name"
+        r'from:\s*([a-zA-Z0-9_\-\.]+)',  # "from: buyer_name"
+    ]
     # Blue color variations (text to ADD/USE as new header)
     BLUE_COLORS = [
         '#0432ff', '#0000ff', '#0000FF', '#0432FF',  # Hex blues
@@ -118,6 +132,12 @@ class EmailParser:
         # Extract price from BODY ONLY (not subject, which may contain prices in item titles)
         new_price = self._extract_price(body)
 
+        # Check if this is a "List new" without price (relist at current price)
+        relist_current_price = self._is_list_new_no_price(body) and new_price is None
+
+        # Check if this is a price revision (Raise/Lower) vs End & Relist
+        is_price_revision = self._is_price_revision(body)
+
         # Extract quantity if specified
         quantity = self._extract_quantity(body)
 
@@ -136,6 +156,9 @@ class EmailParser:
         # Check for odd cases that need manual review
         needs_review = self._check_needs_review(body, notes, blue_text, red_text)
 
+        # Extract buyer username (for blocking)
+        buyer_username = self._extract_buyer_username(body)
+
         return EbayListingInfo(
             item_url=item_url,
             item_id=item_id,
@@ -148,7 +171,10 @@ class EmailParser:
             blue_text=blue_text,
             red_text=red_text,
             needs_review=needs_review,
-            new_title=new_title
+            new_title=new_title,
+            relist_current_price=relist_current_price,
+            buyer_username=buyer_username,
+            is_price_revision=is_price_revision
         )
 
     def _clean_ebay_url(self, url: str, item_id: str) -> str:
@@ -177,6 +203,30 @@ class EmailParser:
                 except ValueError:
                     continue
         return None
+
+    def _is_list_new_no_price(self, text: str) -> bool:
+        """Check if email says 'List new' without specifying a price (relist at current)."""
+        text_lower = text.lower()
+        # Check for "list new" pattern
+        if re.search(r'\blist\s+new\b', text_lower, re.IGNORECASE):
+            # But make sure there's no price following it
+            if not re.search(r'list\s+new\s+\$?[\d,]+\.?\d*', text_lower, re.IGNORECASE):
+                return True
+        return False
+
+    def _is_price_revision(self, text: str) -> bool:
+        """Check if email is a price revision (Raise to / Lower to) vs End & Relist."""
+        text_lower = text.lower()
+        # IMPORTANT: Check for "List new" FIRST - it always means END & RELIST
+        # even if combined with "raise to" (e.g., "List new and raise to $69.50")
+        if re.search(r'\blist\s+new\b', text_lower):
+            return False  # END & RELIST, not a price revision
+        # Only "Raise to" or "Lower to" WITHOUT "list new" = REVISE (just change price)
+        if re.search(r'\braise\s+to\s+\$?[\d,]+', text_lower):
+            return True
+        if re.search(r'\blower\s+to\s+\$?[\d,]+', text_lower):
+            return True
+        return False
 
     def _extract_quantity(self, text: str) -> Optional[int]:
         """Extract quantity from email text."""
@@ -345,6 +395,17 @@ class EmailParser:
             reasons.append("gallery photo change requested - verify manually")
 
         return '; '.join(reasons) if reasons else None
+
+    def _extract_buyer_username(self, text: str) -> Optional[str]:
+        """Extract buyer username from email text."""
+        for pattern in self.BUYER_PATTERNS:
+            match = re.search(pattern, text, re.IGNORECASE)
+            if match:
+                username = match.group(1).strip()
+                # Filter out common false positives
+                if username.lower() not in ['ebay', 'you', 'your', 'the', 'a', 'an', 'item']:
+                    return username
+        return None
 
     def _determine_action(self, text: str) -> str:
         """Determine what action to take based on email content."""
