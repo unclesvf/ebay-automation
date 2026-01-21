@@ -36,6 +36,15 @@ KNOWLEDGE_BASE = Path(r"D:\AI-Knowledge-Base")
 MASTER_DB = KNOWLEDGE_BASE / "master_db.json"
 TRANSCRIPTS_DIR = KNOWLEDGE_BASE / "tutorials" / "transcripts"
 EXTRACTED_DIR = KNOWLEDGE_BASE / "extracted"
+TOKEN_USAGE_FILE = KNOWLEDGE_BASE / "token_usage.json"
+
+# Session token tracking
+SESSION_TOKENS = {
+    'input': 0,
+    'output': 0,
+    'total': 0,
+    'api_calls': 0
+}
 
 # Extraction settings
 CHUNK_SIZE = 3000  # Characters per chunk (roughly 750 tokens)
@@ -110,6 +119,73 @@ Respond ONLY with valid JSON in this exact format:
 }}
 
 If a category has no items, use an empty array []. Ensure valid JSON output."""
+
+
+def load_token_usage():
+    """Load token usage statistics."""
+    if TOKEN_USAGE_FILE.exists():
+        with open(TOKEN_USAGE_FILE, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    return {
+        'total_input_tokens': 0,
+        'total_output_tokens': 0,
+        'total_tokens': 0,
+        'total_api_calls': 0,
+        'sessions': [],
+        'first_use': None,
+        'last_use': None
+    }
+
+
+def save_token_usage(usage_data):
+    """Save token usage statistics."""
+    TOKEN_USAGE_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with open(TOKEN_USAGE_FILE, 'w', encoding='utf-8') as f:
+        json.dump(usage_data, f, indent=2)
+
+
+def record_token_usage(input_tokens, output_tokens):
+    """Record token usage for session and all-time tracking."""
+    global SESSION_TOKENS
+
+    # Update session counters
+    SESSION_TOKENS['input'] += input_tokens
+    SESSION_TOKENS['output'] += output_tokens
+    SESSION_TOKENS['total'] += input_tokens + output_tokens
+    SESSION_TOKENS['api_calls'] += 1
+
+    # Update all-time counters
+    usage = load_token_usage()
+    usage['total_input_tokens'] += input_tokens
+    usage['total_output_tokens'] += output_tokens
+    usage['total_tokens'] += input_tokens + output_tokens
+    usage['total_api_calls'] += 1
+
+    now = datetime.now().isoformat()
+    if not usage['first_use']:
+        usage['first_use'] = now
+    usage['last_use'] = now
+
+    save_token_usage(usage)
+
+
+def finalize_session():
+    """Record session summary to token usage file."""
+    if SESSION_TOKENS['api_calls'] == 0:
+        return
+
+    usage = load_token_usage()
+    usage['sessions'].append({
+        'date': datetime.now().isoformat(),
+        'input_tokens': SESSION_TOKENS['input'],
+        'output_tokens': SESSION_TOKENS['output'],
+        'total_tokens': SESSION_TOKENS['total'],
+        'api_calls': SESSION_TOKENS['api_calls']
+    })
+
+    # Keep only last 50 sessions
+    usage['sessions'] = usage['sessions'][-50:]
+    save_token_usage(usage)
 
 
 def load_database():
@@ -188,6 +264,11 @@ def extract_with_claude(chunk, video_title, channel, segment_num, total_segments
                 {"role": "user", "content": prompt}
             ]
         )
+
+        # Record token usage
+        input_tokens = message.usage.input_tokens
+        output_tokens = message.usage.output_tokens
+        record_token_usage(input_tokens, output_tokens)
 
         response_text = message.content[0].text
 
@@ -400,11 +481,22 @@ def process_all_transcripts(force=False, dry_run=False):
             if not dry_run:
                 errors += 1
 
+    # Finalize session token tracking
+    finalize_session()
+
     print(f"\n{'='*50}")
     print(f"Processing complete:")
     print(f"  Processed: {processed}")
     print(f"  Skipped (already done): {skipped}")
     print(f"  Errors: {errors}")
+
+    # Show session token usage
+    if SESSION_TOKENS['api_calls'] > 0:
+        print(f"\nSession Token Usage:")
+        print(f"  Input tokens:  {SESSION_TOKENS['input']:,}")
+        print(f"  Output tokens: {SESSION_TOKENS['output']:,}")
+        print(f"  Total tokens:  {SESSION_TOKENS['total']:,}")
+        print(f"  API calls:     {SESSION_TOKENS['api_calls']}")
 
 
 def aggregate_all_knowledge():
@@ -537,6 +629,54 @@ def show_stats():
             print(f"    Tips: {tips}, Workflows: {workflows}")
 
 
+def show_token_stats():
+    """Show API token usage statistics."""
+    usage = load_token_usage()
+
+    print("\n=== API TOKEN USAGE STATISTICS ===")
+    print("="*50)
+
+    # All-time stats
+    print(f"\nAll-Time Usage:")
+    print(f"  Input tokens:  {usage['total_input_tokens']:,}")
+    print(f"  Output tokens: {usage['total_output_tokens']:,}")
+    print(f"  Total tokens:  {usage['total_tokens']:,}")
+    print(f"  API calls:     {usage['total_api_calls']:,}")
+
+    if usage['first_use']:
+        print(f"\n  First use: {usage['first_use'][:19].replace('T', ' ')}")
+    if usage['last_use']:
+        print(f"  Last use:  {usage['last_use'][:19].replace('T', ' ')}")
+
+    # Estimate costs (Claude Sonnet pricing as of 2025)
+    # Input: $3/million tokens, Output: $15/million tokens
+    input_cost = (usage['total_input_tokens'] / 1_000_000) * 3.00
+    output_cost = (usage['total_output_tokens'] / 1_000_000) * 15.00
+    total_cost = input_cost + output_cost
+
+    print(f"\n  Estimated cost: ${total_cost:.4f}")
+    print(f"    Input:  ${input_cost:.4f}")
+    print(f"    Output: ${output_cost:.4f}")
+
+    # Recent sessions
+    sessions = usage.get('sessions', [])
+    if sessions:
+        print(f"\nRecent Sessions (last 5):")
+        for session in sessions[-5:]:
+            date = session['date'][:19].replace('T', ' ')
+            total = session['total_tokens']
+            calls = session['api_calls']
+            print(f"  {date}: {total:,} tokens ({calls} calls)")
+
+    # Current session (if any)
+    if SESSION_TOKENS['api_calls'] > 0:
+        print(f"\nCurrent Session:")
+        print(f"  Input tokens:  {SESSION_TOKENS['input']:,}")
+        print(f"  Output tokens: {SESSION_TOKENS['output']:,}")
+        print(f"  Total tokens:  {SESSION_TOKENS['total']:,}")
+        print(f"  API calls:     {SESSION_TOKENS['api_calls']}")
+
+
 def export_knowledge_markdown():
     """Export all extracted knowledge as markdown."""
     exports_dir = KNOWLEDGE_BASE / 'exports'
@@ -664,6 +804,7 @@ Requirements:
     subparsers.add_parser('stats', help='Show extraction statistics')
     subparsers.add_parser('export', help='Export knowledge to markdown')
     subparsers.add_parser('aggregate', help='Aggregate all extractions')
+    subparsers.add_parser('token-stats', help='Show API token usage statistics')
 
     args = parser.parse_args()
 
@@ -674,12 +815,21 @@ Requirements:
 
     if args.command == 'stats':
         show_stats()
+    elif args.command == 'token-stats':
+        show_token_stats()
     elif args.command == 'export':
         export_knowledge_markdown()
     elif args.command == 'aggregate':
         aggregate_all_knowledge()
     elif args.video:
         process_transcript(args.video, force=args.force, dry_run=args.dry_run)
+        finalize_session()
+        if SESSION_TOKENS['api_calls'] > 0:
+            print(f"\nSession Token Usage:")
+            print(f"  Input tokens:  {SESSION_TOKENS['input']:,}")
+            print(f"  Output tokens: {SESSION_TOKENS['output']:,}")
+            print(f"  Total tokens:  {SESSION_TOKENS['total']:,}")
+            print(f"  API calls:     {SESSION_TOKENS['api_calls']}")
     else:
         # Check for API key before processing
         if not args.dry_run:
