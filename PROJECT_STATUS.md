@@ -1,7 +1,28 @@
 # eBay Listing Automation Tool - Project Status
 
-**Last Updated:** January 21, 2026
+**Last Updated:** January 22, 2026
 **Status:** COMPLETED & ENHANCED
+
+---
+
+## January 22, 2026 - New Email Categories & Auto-Open Reports
+
+### New Email Categories
+Added 3 new Outlook folder categories and enhanced existing:
+- **Engraving-Laser** (enhanced): Added keywords - opa, fiber laser, co2 laser, 3d engrav, coin engrav, creative space
+- **Adobe-Editing** (new): lightroom, photoshop, firefly, adobe creative, adobe cc
+- **HiggsField** (new): higgsfield, nanobanana, higgs field
+- **Grok-xAI** (new): grok imagine, grok image, grok ai, xai
+
+### Auto-Open Reports
+Pipeline now automatically opens `D:\AI-Knowledge-Base\exports\index.html` in Chrome when it finishes.
+- Use `--no-open` flag to disable: `python run_pipeline.py --no-open`
+
+### Files Modified
+- `scott_folder_organizer.py` - Added new SUBFOLDER_RULES entries
+- `organize_scott_folder.py` - Added matching categorization logic
+- `kb_config.py` - Added HiggsField, Grok-xAI to AI_CONTENT_FOLDERS; Engraving-Laser, Adobe-Editing to RELATED_CONTENT_FOLDERS
+- `run_pipeline.py` - Added open_reports() method and --no-open flag
 
 ---
 
@@ -34,6 +55,7 @@ python run_pipeline.py --stage reports    # Run single stage
 python run_pipeline.py --from youtube     # Run from stage onwards
 python run_pipeline.py --list-stages      # List all stages
 python run_pipeline.py --extract-knowledge # Enable LLM stage (costs $)
+python run_pipeline.py --no-open          # Don't open reports in browser
 ```
 
 **Files Created:**

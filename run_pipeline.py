@@ -138,9 +138,10 @@ STAGES = [
 class PipelineRunner:
     """Orchestrates the AI Knowledge Base pipeline."""
 
-    def __init__(self, dry_run: bool = False, skip_llm: bool = False):
+    def __init__(self, dry_run: bool = False, skip_llm: bool = False, no_open: bool = False):
         self.dry_run = dry_run
         self.skip_llm = skip_llm
+        self.no_open = no_open
         self.results: Dict[str, StageResult] = {}
         self.start_time = None
 
@@ -327,7 +328,21 @@ class PipelineRunner:
         self.print_summary()
         self.save_state()
 
+        # Open reports in browser (unless dry run or --no-open)
+        if not self.dry_run and not self.no_open:
+            self.open_reports()
+
         return self.results
+
+    def open_reports(self):
+        """Open the AI Knowledge Base reports in Chrome."""
+        reports_index = KNOWLEDGE_BASE / 'exports' / 'index.html'
+        if reports_index.exists():
+            try:
+                subprocess.run(['start', 'chrome', str(reports_index)], shell=True)
+                print(f"\nOpened reports in Chrome: {reports_index}")
+            except Exception as e:
+                print(f"\nCould not open reports: {e}")
 
     def _should_run_stage(self, stage: Stage) -> bool:
         """Check if a stage should run based on settings."""
@@ -505,6 +520,8 @@ Examples:
                        help='List all available stages')
     parser.add_argument('--api-key', type=str,
                        help='Anthropic API key for LLM extraction')
+    parser.add_argument('--no-open', action='store_true',
+                       help='Do not open reports in browser after completion')
 
     args = parser.parse_args()
 
@@ -524,7 +541,8 @@ Examples:
     # Create runner
     runner = PipelineRunner(
         dry_run=args.dry_run,
-        skip_llm=args.skip_llm
+        skip_llm=args.skip_llm,
+        no_open=args.no_open
     )
 
     # Determine stages to run
