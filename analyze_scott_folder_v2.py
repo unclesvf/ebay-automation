@@ -4,6 +4,7 @@ Detailed analysis of emails in Scott's folder - categorize by type
 
 import sys
 sys.path.insert(0, r'C:\Users\scott\ebay-automation')
+sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 
 from outlook_reader import OutlookReader
 from collections import defaultdict
