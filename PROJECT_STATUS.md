@@ -1,7 +1,54 @@
 # eBay Listing Automation Tool - Project Status
 
-**Last Updated:** January 20, 2026
+**Last Updated:** January 21, 2026
 **Status:** COMPLETED & ENHANCED
+
+---
+
+## January 21, 2026 - AI Knowledge Base Pipeline
+
+### New Feature: Master Orchestration Script
+Added `run_pipeline.py` - a master script that runs all AI Knowledge Base scripts in the correct order with a single command.
+
+**Pipeline Stages (11 total):**
+| # | Stage | Script | Default | Description |
+|---|-------|--------|---------|-------------|
+| 1 | organize | scott_folder_organizer.py | ON | Organize Outlook emails |
+| 2 | extract | ai_content_extractor.py | ON | Extract URLs from emails |
+| 3 | youtube | youtube_metadata.py | ON | Fetch video metadata/transcripts |
+| 4 | analyze | transcript_analyzer.py | ON | Extract tools, tips |
+| 5 | search | transcript_search.py | ON | Build FTS5 search index |
+| 6 | llm | extract_knowledge.py | OFF | Claude API extraction (costs $) |
+| 7 | reports | generate_reports.py | ON | Generate HTML reports |
+| 8 | gallery | style_code_gallery.py | ON | Generate sref gallery |
+| 9 | models | model_tracker.py | ON | Generate model report |
+| 10 | courses | course_materials.py | ON | Generate course materials |
+| 11 | sync | sync_to_d_drive.py | ON | Sync to D: drive |
+
+**Usage:**
+```bash
+python run_pipeline.py                    # Full pipeline (10 stages, ~3-5 seconds)
+python run_pipeline.py status             # Show KB status
+python run_pipeline.py --dry-run          # Preview without executing
+python run_pipeline.py --stage reports    # Run single stage
+python run_pipeline.py --from youtube     # Run from stage onwards
+python run_pipeline.py --list-stages      # List all stages
+python run_pipeline.py --extract-knowledge # Enable LLM stage (costs $)
+```
+
+**Files Created:**
+- `run_pipeline.py` - Master orchestration script (406 lines)
+- `kb_config.py` - Shared configuration constants
+- `pipeline_state.json` - Tracks last run state
+
+**Bug Fixes:**
+- Fixed `scott_folder_organizer.py` null handling for emails with empty subject/body
+- Fixed subprocess encoding to handle Unicode characters in email content
+
+**Current KB Stats (Jan 21, 2026):**
+- 7 GitHub repos, 2 HuggingFace models, 1 YouTube tutorial
+- 546 emails organized across 27 subfolders
+- 18 HTML reports generated in `D:\AI-Knowledge-Base\exports\`
 
 ---
 
@@ -146,11 +193,15 @@ Tool to automate eBay listing price updates based on emails from Linda in Outloo
 
 ## Completion Summary
 
-### Completed: 235 items as of January 20, 2026
+### eBay Automation: 235+ items as of January 21, 2026
 
 All price update emails from the Linda folder have been processed using the end → sell similar workflow.
 
 **Note:** Initial approach (revising prices) was incorrect. Correct workflow is to END the listing, then use "Sell Similar" to relist at the new price.
+
+### AI Knowledge Base: Active as of January 21, 2026
+
+Pipeline running with 10 stages enabled. Content: 7 GitHub repos, 2 HuggingFace, 1 tutorial with transcript, 546 emails organized.
 
 ---
 
@@ -224,21 +275,43 @@ All price update emails from the Linda folder have been processed using the end 
 
 ## Files in Project
 
+### eBay Automation
 | File | Purpose |
 |------|---------|
 | `end_and_relist.py` | **CURRENT SCRIPT** - End listing + Sell Similar workflow |
 | `instruction_parser.py` | Parses bulk instruction emails (change all X to $Y) |
-| `main.py` | Original interactive CLI (deprecated) |
 | `outlook_reader.py` | Outlook COM automation module |
 | `email_parser.py` | Parses eBay URLs and prices from email text |
-| `ebay_browser.py` | Selenium Chrome automation (not used) |
-| `config.py` | Configuration settings |
-| `process_batch.py` | Old batch processor - revise workflow (deprecated) |
-| `OutlookMacro.vba` | VBA macro for Outlook (backup approach) |
-| `process_export.py` | Processes VBA export (backup approach) |
+| `config.py` | Configuration settings (eBay) |
 | `completed_items.txt` | Log of processed item IDs |
 | `stats.txt` | Processing statistics by date |
-| `requirements.txt` | Python dependencies (installed) |
+
+### AI Knowledge Base
+| File | Purpose |
+|------|---------|
+| `run_pipeline.py` | **PIPELINE** - Master orchestration script |
+| `kb_config.py` | Shared configuration constants |
+| `scott_folder_organizer.py` | Organize Scott folder emails |
+| `ai_content_extractor.py` | Extract URLs from emails |
+| `youtube_metadata.py` | Fetch video metadata/transcripts |
+| `transcript_analyzer.py` | Extract tools, tips from transcripts |
+| `transcript_search.py` | FTS5 search index |
+| `generate_reports.py` | Generate HTML reports |
+| `style_code_gallery.py` | Midjourney sref gallery |
+| `model_tracker.py` | AI model tracking |
+| `course_materials.py` | Generate course content |
+| `extract_knowledge.py` | Claude API extraction (optional) |
+| `sync_to_d_drive.py` | Sync to D:\AI-Knowledge-Base |
+| `pipeline_state.json` | Pipeline run state |
+
+### Deprecated/Backup
+| File | Purpose |
+|------|---------|
+| `main.py` | Original interactive CLI (deprecated) |
+| `ebay_browser.py` | Selenium Chrome automation (not used) |
+| `process_batch.py` | Old batch processor (deprecated) |
+| `OutlookMacro.vba` | VBA macro for Outlook (backup) |
+| `process_export.py` | Processes VBA export (backup) |
 
 ---
 
