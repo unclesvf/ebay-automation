@@ -498,6 +498,7 @@ def get_next_batch(reader, limit=5):
                 'needs_review': parsed.needs_review,
                 'body_preview': email.get('body', '')[:500],  # Store preview for review
                 'buyer_username': parsed.buyer_username,
+                'suspected_new_title': parsed.suspected_new_title,
             })
         elif parsed and parsed.new_price is None and not parsed.relist_current_price:
             # Has eBay URL but no price - title/header change only
@@ -513,6 +514,7 @@ def get_next_batch(reader, limit=5):
                 'red_text': parsed.red_text,
                 'new_title': parsed.new_title,
                 'body_preview': email.get('body', '')[:500],
+                'suspected_new_title': parsed.suspected_new_title,
             })
         elif not parsed:
             # No eBay URL found - might be an instruction email from Linda
@@ -926,8 +928,19 @@ def main():
             price_str = f"${l['price']:.2f}" if l['price'] else "(Current)"
             print(f"[{i}] {l['item_id']} | NEW PRICE: {price_str} | REVISE")
             print(f"    TITLE:  {l['title']}")
+            action_parts = []
             if l.get('notes'):
-                print(f"    ACTION: {'; '.join(l['notes'])}")
+                action_parts.append('; '.join(l['notes']))
+            if l.get('new_title'):
+                action_parts.append(f"NEW TITLE: {l['new_title']}")
+            if l.get('blue_text'):
+                for bt in l['blue_text']:
+                    action_parts.append(f"USE TITLE: {bt}")
+            if action_parts:
+                print(f"    ACTION: {'; '.join(action_parts)}")
+            # Show suspected title if Linda forgot blue text
+            if l.get('suspected_new_title') and not l.get('blue_text') and not l.get('new_title'):
+                print(f"    *** SUSPECTED TITLE (not blue): {l['suspected_new_title']}")
             print()
 
         print(f"Opened {len(price_revisions)} tabs - REVISE price only (do NOT end)")
@@ -963,6 +976,9 @@ def main():
                     action_parts.append(f"USE TITLE: {bt}")
             if action_parts:
                 print(f"    ACTION: {'; '.join(action_parts)}")
+            # Show suspected title if Linda forgot blue text
+            if l.get('suspected_new_title') and not l.get('blue_text'):
+                print(f"    *** SUSPECTED TITLE (not blue): {l['suspected_new_title']}")
             print()
 
         # Open pages for end & relist

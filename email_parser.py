@@ -27,6 +27,7 @@ class EbayListingInfo:
     relist_current_price: bool = False  # True when "List new" without price (use current)
     buyer_username: Optional[str] = None  # Buyer username (for blocking)
     is_price_revision: bool = False  # True for "Raise to" or "Lower to" (REVISE, not end/relist)
+    suspected_new_title: Optional[str] = None  # Potential new title found in body (not blue) that differs from current
 
     def __str__(self):
         result = f"Item: {self.item_title}\nID: {self.item_id}\nURL: {self.item_url}"
@@ -159,6 +160,9 @@ class EmailParser:
         # Extract buyer username (for blocking)
         buyer_username = self._extract_buyer_username(body)
 
+        # Detect potential new title that Linda forgot to mark in blue
+        suspected_new_title = self._detect_suspected_title(body, item_title, blue_text, new_title)
+
         return EbayListingInfo(
             item_url=item_url,
             item_id=item_id,
@@ -174,7 +178,8 @@ class EmailParser:
             new_title=new_title,
             relist_current_price=relist_current_price,
             buyer_username=buyer_username,
-            is_price_revision=is_price_revision
+            is_price_revision=is_price_revision,
+            suspected_new_title=suspected_new_title
         )
 
     def _clean_ebay_url(self, url: str, item_id: str) -> str:
@@ -329,8 +334,8 @@ class EmailParser:
         blue_texts = []
         red_texts = []
 
-        # Pattern to match <font color="...">text</font>
-        font_pattern = r'<font\s+color=["\']([^"\']+)["\']\s*[^>]*>([^<]+)</font>'
+        # Pattern to match <font color="...">text</font> (allowing embedded tags like <wbr>)
+        font_pattern = r'<font\s+color=["\']([^"\']+)["\']\s*[^>]*>(.*?)</font>'
 
         # Pattern to match <span style="color: ...">text</span> and similar
         style_pattern = r'<(?:span|div|p|h1)[^>]*style=["\'][^"\']*color:\s*([^;"\']+)[^"\']*["\'][^>]*>([^<]+)</(?:span|div|p|h1)>'
@@ -341,7 +346,8 @@ class EmailParser:
         for pattern in [font_pattern, style_pattern, nested_style_pattern]:
             matches = re.findall(pattern, html, re.IGNORECASE | re.DOTALL)
             for color, text in matches:
-                # Clean up the text
+                # Clean up the text - remove any embedded HTML tags like <wbr>
+                text = re.sub(r'<[^>]+>', '', text)
                 text = unescape(text).strip()
                 if not text or len(text) < 2:
                     continue
@@ -405,6 +411,62 @@ class EmailParser:
                 # Filter out common false positives
                 if username.lower() not in ['ebay', 'you', 'your', 'the', 'a', 'an', 'item']:
                     return username
+        return None
+
+    def _detect_suspected_title(self, body: str, current_title: str, blue_text: Optional[List[str]], new_title: Optional[str]) -> Optional[str]:
+        """
+        Detect potential new title in email body that Linda may have forgotten to mark in blue.
+        Compares title-like lines in the body against the current title.
+
+        Returns the suspected new title if found and different from current, None otherwise.
+        """
+        # Skip if we already have a blue_text or new_title
+        if blue_text or new_title:
+            return None
+
+        # Normalize current title for comparison
+        current_lower = current_title.lower().strip()
+        # Remove common suffixes
+        for suffix in [' | ebay', ' - ebay', '| ebay', '- ebay']:
+            if current_lower.endswith(suffix):
+                current_lower = current_lower[:-len(suffix)]
+
+        lines = body.split('\n')
+
+        for line in lines:
+            line = line.strip()
+
+            # Skip empty lines, URLs, price instructions, short lines
+            if not line or len(line) < 20:
+                continue
+            if line.lower().startswith('http'):
+                continue
+            if line.lower().startswith(('list ', 'raise ', 'lower ', 'change ', 'end ')):
+                continue
+            if '$' in line and len(line) < 50:  # Price line
+                continue
+            if line.lower() in ['sent from my iphone', 'sent from my ipad']:
+                continue
+
+            # This looks like it could be a title - compare to current
+            line_lower = line.lower()
+
+            # Check if it's substantially different from current title
+            # but still looks like the same item (shares some words)
+            current_words = set(current_lower.split())
+            line_words = set(line_lower.split())
+
+            # Must share at least 3 words (same item) but not be identical
+            shared_words = current_words & line_words
+            if len(shared_words) >= 3 and line_lower != current_lower:
+                # Check it's not just a substring match
+                if line_lower not in current_lower and current_lower not in line_lower:
+                    return line
+                # Or if it has new words added (like "Novelty Token")
+                new_words = line_words - current_words
+                if len(new_words) >= 1:
+                    return line
+
         return None
 
     def _determine_action(self, text: str) -> str:
