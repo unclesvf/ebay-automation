@@ -40,6 +40,15 @@ def categorize_email(subject, body):
         return 'AI Music-Audio'
     if any(x in text for x in ['image', 'art', 'midjourney', 'dall-e', 'stable diffusion']):
         return 'AI Art-Images'
+    if any(x in text for x in ['laser', 'engrav', 'xtool', 'lightburn', 'opa', 'fiber laser',
+                                'co2 laser', '3d engrav', 'coin engrav', 'creative space']):
+        return 'Engraving-Laser'
+    if any(x in text for x in ['lightroom', 'photoshop', 'firefly', 'adobe creative', 'adobe cc']):
+        return 'Adobe-Editing'
+    if any(x in text for x in ['higgsfield', 'nanobanana', 'higgs field']):
+        return 'HiggsField'
+    if any(x in text for x in ['grok imagine', 'grok image', 'grok ai', 'xai']):
+        return 'Grok-xAI'
     if any(x in text for x in ['code', 'coding', 'programming', 'developer', 'dev']):
         return 'Coding-Development'
     if 'outlook' in text:

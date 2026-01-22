@@ -33,11 +33,13 @@ SCOTT_FOLDER = "scott"
 # Folders to process for AI content extraction
 AI_CONTENT_FOLDERS = [
     'AI Agents', 'AI Art-Images', 'AI Music-Audio',
-    'General AI', 'Claude-Anthropic', 'ChatGPT-OpenAI', 'Google-Gemini'
+    'General AI', 'Claude-Anthropic', 'ChatGPT-OpenAI', 'Google-Gemini',
+    'HiggsField', 'Grok-xAI'
 ]
 RELATED_CONTENT_FOLDERS = [
     'GitHub Projects', 'Software-Apps', 'YouTube Videos',
-    'Coding-Development', 'X-Twitter Posts'
+    'Coding-Development', 'X-Twitter Posts',
+    'Engraving-Laser', 'Adobe-Editing'
 ]
 DEFAULT_EXTRACT_FOLDERS = AI_CONTENT_FOLDERS + RELATED_CONTENT_FOLDERS
 
