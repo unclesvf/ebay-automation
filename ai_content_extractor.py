@@ -9,6 +9,7 @@ sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 
 from outlook_reader import OutlookReader
 from datetime import datetime
+from kb_config import DEFAULT_EXTRACT_FOLDERS, AI_CONTENT_FOLDERS, RELATED_CONTENT_FOLDERS
 import re
 import json
 import os
@@ -551,11 +552,69 @@ def process_existing_json():
     print(f"YouTube tutorials: {len(db['tutorials'])}")
     print(f"Midjourney sref codes: {len(db['styles']['midjourney_sref'])}")
 
-def process_outlook_emails():
-    """Process emails directly from Outlook Scott folder."""
+def process_subfolder(subfolder, db):
+    """
+    Process a single Outlook subfolder for AI content extraction.
+    Returns a dict with stats: {emails, github, hf, yt, sref, added}
+    """
+    stats = {'emails': 0, 'github': 0, 'hf': 0, 'yt': 0, 'sref': 0, 'added': 0}
+    subfolder_name = subfolder.Name
+
+    items = subfolder.Items
+    items.Sort("[ReceivedTime]", True)
+
+    for item in items:
+        if item.Class != 43:  # Not a mail item
+            continue
+
+        stats['emails'] += 1
+
+        try:
+            subject = item.Subject or ''
+            body = item.Body or ''
+            text = f"{subject} {body}"
+
+            source_info = {
+                'type': 'outlook_email',
+                'folder': subfolder_name,
+                'subject': subject[:100],
+                'date': str(item.ReceivedTime)[:10]
+            }
+
+            extractions = extract_all_from_text(text, source_info)
+
+            # Track what was found (before dedup)
+            stats['github'] += len(extractions['github_repos'])
+            stats['hf'] += len(extractions['huggingface_refs'])
+            stats['yt'] += len(extractions['youtube_videos'])
+            stats['sref'] += len(extractions['style_codes']['sref'])
+
+            added = add_to_db(db, extractions, text)
+            stats['added'] += added
+
+            if added > 0:
+                author = subject.replace('Post by ', '').split(' on X')[0]
+                print(f"    [{source_info['date']}] +{added}: {author[:40]}")
+
+        except Exception as e:
+            pass
+
+    return stats
+
+
+def process_outlook_emails(folders_to_process=None):
+    """
+    Process emails from multiple Outlook Scott subfolders.
+
+    Args:
+        folders_to_process: List of folder names to process. If None, uses DEFAULT_EXTRACT_FOLDERS.
+    """
     print("=" * 80)
-    print("PROCESSING OUTLOOK EMAILS")
+    print("PROCESSING OUTLOOK EMAILS (Multi-Folder)")
     print("=" * 80)
+
+    if folders_to_process is None:
+        folders_to_process = DEFAULT_EXTRACT_FOLDERS
 
     reader = OutlookReader()
     if not reader.connect():
@@ -567,61 +626,63 @@ def process_outlook_emails():
         print("Master DB not found!")
         return
 
-    # Get X-Twitter Posts folder
-    folder = reader.get_folder_by_name("scott", "scott@unclesvf.com")
-    if not folder:
+    # Get Scott folder
+    scott_folder = reader.get_folder_by_name("scott", "scott@unclesvf.com")
+    if not scott_folder:
         print("ERROR: Could not find 'scott' folder")
         return
 
-    # Find X-Twitter Posts subfolder
-    twitter_folder = None
-    for sf in folder.Folders:
-        if sf.Name == 'X-Twitter Posts':
-            twitter_folder = sf
-            break
+    # Build a map of available subfolders
+    available_folders = {}
+    for sf in scott_folder.Folders:
+        available_folders[sf.Name] = sf
 
-    if not twitter_folder:
-        print("ERROR: Could not find 'X-Twitter Posts' subfolder")
-        return
+    print(f"Configured folders: {len(folders_to_process)}")
+    print(f"Available in Outlook: {len(available_folders)}")
 
-    print(f"Found {twitter_folder.Items.Count} items in X-Twitter Posts")
-
+    # Track stats per folder
+    folder_stats = {}
     total_added = 0
-    items = twitter_folder.Items
-    items.Sort("[ReceivedTime]", True)
 
-    for item in items:
-        if item.Class != 43:  # Not a mail item
+    for folder_name in folders_to_process:
+        if folder_name not in available_folders:
+            print(f"\n--- Skipping: {folder_name} (not found) ---")
             continue
 
-        try:
-            subject = item.Subject or ''
-            body = item.Body or ''
-            text = f"{subject} {body}"
+        subfolder = available_folders[folder_name]
+        email_count = subfolder.Items.Count
 
-            source_info = {
-                'type': 'outlook_email',
-                'subject': subject[:100],
-                'date': str(item.ReceivedTime)[:10]
-            }
+        print(f"\n--- Processing: {folder_name} ({email_count} emails) ---")
 
-            extractions = extract_all_from_text(text, source_info)
-            added = add_to_db(db, extractions, text)
-
-            if added > 0:
-                author = subject.replace('Post by ', '').split(' on X')[0]
-                print(f"  [{source_info['date']}] Added {added} items from: {author[:30]}")
-                total_added += added
-
-        except Exception as e:
-            pass
+        stats = process_subfolder(subfolder, db)
+        folder_stats[folder_name] = stats
+        total_added += stats['added']
 
     save_master_db(db)
 
-    print("\n" + "-" * 80)
-    print("SUMMARY")
+    # Print summary by folder
+    print("\n" + "=" * 80)
+    print("SUMMARY BY FOLDER")
+    print("=" * 80)
+    print(f"{'Folder':<25} {'Emails':>7} {'GitHub':>8} {'HF':>6} {'YT':>6} {'Sref':>6} {'Added':>7}")
     print("-" * 80)
-    print(f"Added {total_added} new entries to master_db")
+
+    for folder_name, stats in folder_stats.items():
+        print(f"{folder_name:<25} {stats['emails']:>7} {stats['github']:>8} {stats['hf']:>6} {stats['yt']:>6} {stats['sref']:>6} {stats['added']:>7}")
+
+    print("-" * 80)
+    totals = {
+        'emails': sum(s['emails'] for s in folder_stats.values()),
+        'github': sum(s['github'] for s in folder_stats.values()),
+        'hf': sum(s['hf'] for s in folder_stats.values()),
+        'yt': sum(s['yt'] for s in folder_stats.values()),
+        'sref': sum(s['sref'] for s in folder_stats.values()),
+    }
+    print(f"{'TOTAL':<25} {totals['emails']:>7} {totals['github']:>8} {totals['hf']:>6} {totals['yt']:>6} {totals['sref']:>6} {total_added:>7}")
+
+    print("\n" + "-" * 80)
+    print("DATABASE TOTALS")
+    print("-" * 80)
     print(f"GitHub repos: {len(db['repositories']['github'])}")
     print(f"HuggingFace refs: {len(db['repositories']['huggingface'])}")
     print(f"YouTube tutorials: {len(db['tutorials'])}")
@@ -768,31 +829,69 @@ def process_with_tco_expansion():
     print(f"Midjourney sref codes: {len(db['styles']['midjourney_sref'])}")
     print(f"\nURL cache saved to: {_cache_file}")
 
+def list_folders():
+    """List configured folders for extraction."""
+    print("=" * 80)
+    print("CONFIGURED EXTRACTION FOLDERS")
+    print("=" * 80)
+
+    print("\nAI-Specific (High Priority):")
+    for folder in AI_CONTENT_FOLDERS:
+        print(f"  - {folder}")
+
+    print("\nRelated Content:")
+    for folder in RELATED_CONTENT_FOLDERS:
+        print(f"  - {folder}")
+
+    print(f"\nTotal: {len(DEFAULT_EXTRACT_FOLDERS)} folders")
+    print("\nUse --folders \"Folder1,Folder2\" to process specific folders")
+
+
+def parse_folders_arg(folders_arg):
+    """Parse comma-separated folder names from CLI argument."""
+    if not folders_arg:
+        return None
+    return [f.strip() for f in folders_arg.split(',') if f.strip()]
+
+
 def main():
     """Main entry point."""
     import sys
+
+    # Check for --folders argument
+    folders_to_process = None
+    if '--folders' in sys.argv:
+        idx = sys.argv.index('--folders')
+        if idx + 1 < len(sys.argv):
+            folders_to_process = parse_folders_arg(sys.argv[idx + 1])
+            print(f"Processing specific folders: {folders_to_process}")
 
     if len(sys.argv) > 1:
         cmd = sys.argv[1]
         if cmd == '--json':
             process_existing_json()
         elif cmd == '--outlook':
-            process_outlook_emails()
+            process_outlook_emails(folders_to_process)
         elif cmd == '--stats':
             show_stats()
         elif cmd == '--all':
             process_existing_json()
             print("\n")
-            process_outlook_emails()
+            process_outlook_emails(folders_to_process)
         elif cmd == '--expand':
             process_with_tco_expansion()
+        elif cmd == '--list-folders':
+            list_folders()
         else:
             print("Usage:")
-            print("  python ai_content_extractor.py --json     Process twitter_data_extract.json")
-            print("  python ai_content_extractor.py --outlook  Process Outlook emails directly")
-            print("  python ai_content_extractor.py --stats    Show database statistics")
-            print("  python ai_content_extractor.py --all      Process both sources")
-            print("  python ai_content_extractor.py --expand   Process with t.co link expansion")
+            print("  python ai_content_extractor.py --json        Process twitter_data_extract.json")
+            print("  python ai_content_extractor.py --outlook     Process Outlook emails (all folders)")
+            print("  python ai_content_extractor.py --outlook --folders \"AI Agents,General AI\"")
+            print("                                               Process specific folders only")
+            print("  python ai_content_extractor.py --list-folders  Show configured folders")
+            print("  python ai_content_extractor.py --stats       Show database statistics")
+            print("  python ai_content_extractor.py --all         Process both sources")
+            print("  python ai_content_extractor.py --expand      Process with t.co link expansion")
     else:
         # Default: process JSON first, then show stats
         process_existing_json()

@@ -5,8 +5,8 @@ AI Knowledge Base Pipeline - Master orchestration script.
 Runs all AI Knowledge Base scripts in the correct order with a single command.
 
 Usage:
-    python run_pipeline.py                          # Full pipeline (no LLM)
-    python run_pipeline.py --extract-knowledge      # Include LLM extraction (costs $)
+    python run_pipeline.py                          # Full pipeline (includes LLM)
+    python run_pipeline.py --skip-llm               # Skip LLM extraction to save $
     python run_pipeline.py --stage reports          # Run single stage
     python run_pipeline.py --stages youtube,analyze # Run multiple stages
     python run_pipeline.py --from youtube           # Run from stage onwards
@@ -98,7 +98,7 @@ STAGES = [
         id='llm',
         script='extract_knowledge.py',
         description='Claude API knowledge extraction (costs $)',
-        default_enabled=False,
+        default_enabled=True,
         requires_api_key=True
     ),
     Stage(
@@ -138,9 +138,9 @@ STAGES = [
 class PipelineRunner:
     """Orchestrates the AI Knowledge Base pipeline."""
 
-    def __init__(self, dry_run: bool = False, extract_knowledge: bool = False):
+    def __init__(self, dry_run: bool = False, skip_llm: bool = False):
         self.dry_run = dry_run
-        self.extract_knowledge = extract_knowledge
+        self.skip_llm = skip_llm
         self.results: Dict[str, StageResult] = {}
         self.start_time = None
 
@@ -288,19 +288,19 @@ class PipelineRunner:
         print("AI KNOWLEDGE BASE PIPELINE")
         print("=" * 80)
         print(f"Mode: {'DRY RUN' if self.dry_run else 'LIVE'}")
-        print(f"LLM Extraction: {'ENABLED' if self.extract_knowledge else 'DISABLED'}")
+        print(f"LLM Extraction: {'DISABLED (--skip-llm)' if self.skip_llm else 'ENABLED'}")
         print(f"Stages: {enabled_count} of {total} enabled")
         print()
 
         for i, stage in enumerate(stage_list, 1):
             if not self._should_run_stage(stage):
                 print(f"[{i}/{total}] {stage.description}...")
-                print(f"       SKIPPED (use --extract-knowledge to enable)")
+                print(f"       SKIPPED (--skip-llm flag set)")
                 self.results[stage.id] = StageResult(
                     stage_id=stage.id,
                     status='skipped',
                     duration_seconds=0,
-                    output_summary="Disabled by default"
+                    output_summary="Skipped via --skip-llm"
                 )
                 print()
                 continue
@@ -332,7 +332,7 @@ class PipelineRunner:
     def _should_run_stage(self, stage: Stage) -> bool:
         """Check if a stage should run based on settings."""
         if stage.id == 'llm':
-            return self.extract_knowledge
+            return not self.skip_llm
         return stage.default_enabled
 
     def print_summary(self):
@@ -478,8 +478,8 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog='''
 Examples:
-  python run_pipeline.py                          # Full pipeline (default - no LLM)
-  python run_pipeline.py --extract-knowledge      # Include LLM extraction (costs $)
+  python run_pipeline.py                          # Full pipeline (includes LLM)
+  python run_pipeline.py --skip-llm               # Skip LLM extraction to save $
   python run_pipeline.py --stage reports          # Run single stage
   python run_pipeline.py --stages youtube,analyze # Run specific stages
   python run_pipeline.py --from youtube           # Run from stage onwards
@@ -493,8 +493,8 @@ Examples:
                        help='Command: status, or leave empty for full pipeline')
     parser.add_argument('--dry-run', '-n', action='store_true',
                        help='Preview what would run without executing')
-    parser.add_argument('--extract-knowledge', '-e', action='store_true',
-                       help='Enable LLM knowledge extraction (costs $)')
+    parser.add_argument('--skip-llm', action='store_true',
+                       help='Skip LLM knowledge extraction to save $')
     parser.add_argument('--stage', '-s', type=str,
                        help='Run a single stage by ID')
     parser.add_argument('--stages', type=str,
@@ -524,7 +524,7 @@ Examples:
     # Create runner
     runner = PipelineRunner(
         dry_run=args.dry_run,
-        extract_knowledge=args.extract_knowledge
+        skip_llm=args.skip_llm
     )
 
     # Determine stages to run

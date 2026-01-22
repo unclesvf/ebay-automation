@@ -30,5 +30,16 @@ SCRIPTS_DIR = KNOWLEDGE_BASE / "scripts"
 OUTLOOK_ACCOUNT = "scott@unclesvf.com"
 SCOTT_FOLDER = "scott"
 
+# Folders to process for AI content extraction
+AI_CONTENT_FOLDERS = [
+    'AI Agents', 'AI Art-Images', 'AI Music-Audio',
+    'General AI', 'Claude-Anthropic', 'ChatGPT-OpenAI', 'Google-Gemini'
+]
+RELATED_CONTENT_FOLDERS = [
+    'GitHub Projects', 'Software-Apps', 'YouTube Videos',
+    'Coding-Development', 'X-Twitter Posts'
+]
+DEFAULT_EXTRACT_FOLDERS = AI_CONTENT_FOLDERS + RELATED_CONTENT_FOLDERS
+
 # Default settings
 DEFAULT_BATCH_SIZE = 5

@@ -1,30 +1,30 @@
 {
-  "last_run": "2026-01-21T16:20:24.261049",
+  "last_run": "2026-01-22T14:22:23.899395",
   "results": {
     "organize": {
       "status": "success",
-      "duration": 0.9578602313995361,
-      "items": 0
+      "duration": 1.1031579971313477,
+      "items": 1
     },
     "extract": {
       "status": "success",
-      "duration": 1.1754798889160156,
+      "duration": 2.3564486503601074,
       "items": 57
     },
     "youtube": {
       "status": "success",
-      "duration": 0.2546539306640625,
+      "duration": 0.8404529094696045,
       "items": 0
     },
     "analyze": {
       "status": "success",
-      "duration": 0.12688803672790527,
+      "duration": 0.40244340896606445,
       "items": 0
     },
     "search": {
       "status": "success",
-      "duration": 0.04615426063537598,
-      "items": 1
+      "duration": 0.04565572738647461,
+      "items": 5
     },
     "llm": {
       "status": "skipped",
@@ -33,27 +33,27 @@
     },
     "reports": {
       "status": "success",
-      "duration": 0.11270737648010254,
+      "duration": 0.11415386199951172,
       "items": 0
     },
     "gallery": {
       "status": "success",
-      "duration": 0.05282258987426758,
+      "duration": 0.04811739921569824,
       "items": 0
     },
     "models": {
       "status": "success",
-      "duration": 0.05104660987854004,
+      "duration": 0.05133795738220215,
       "items": 0
     },
     "courses": {
       "status": "success",
-      "duration": 0.1371755599975586,
+      "duration": 0.13685870170593262,
       "items": 0
     },
     "sync": {
       "status": "success",
-      "duration": 0.09019613265991211,
+      "duration": 0.07940936088562012,
       "items": 0
     }
   }
