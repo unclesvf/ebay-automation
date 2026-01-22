@@ -44,6 +44,9 @@ KB_SCRIPTS = [
     'course_materials.py',
     'extract_knowledge.py',
     'sync_to_d_drive.py',
+    'run_pipeline.py',
+    'kb_config.py',
+    'scott_folder_organizer.py',
 ]
 
 # Directory structure

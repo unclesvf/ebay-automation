@@ -1,0 +1,60 @@
+{
+  "last_run": "2026-01-21T16:20:24.261049",
+  "results": {
+    "organize": {
+      "status": "success",
+      "duration": 0.9578602313995361,
+      "items": 0
+    },
+    "extract": {
+      "status": "success",
+      "duration": 1.1754798889160156,
+      "items": 57
+    },
+    "youtube": {
+      "status": "success",
+      "duration": 0.2546539306640625,
+      "items": 0
+    },
+    "analyze": {
+      "status": "success",
+      "duration": 0.12688803672790527,
+      "items": 0
+    },
+    "search": {
+      "status": "success",
+      "duration": 0.04615426063537598,
+      "items": 1
+    },
+    "llm": {
+      "status": "skipped",
+      "duration": 0,
+      "items": 0
+    },
+    "reports": {
+      "status": "success",
+      "duration": 0.11270737648010254,
+      "items": 0
+    },
+    "gallery": {
+      "status": "success",
+      "duration": 0.05282258987426758,
+      "items": 0
+    },
+    "models": {
+      "status": "success",
+      "duration": 0.05104660987854004,
+      "items": 0
+    },
+    "courses": {
+      "status": "success",
+      "duration": 0.1371755599975586,
+      "items": 0
+    },
+    "sync": {
+      "status": "success",
+      "duration": 0.09019613265991211,
+      "items": 0
+    }
+  }
+}

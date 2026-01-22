@@ -42,6 +42,8 @@ SUBFOLDER_RULES = {
 
 def categorize_email(subject, body):
     """Determine the best subfolder for an email based on content."""
+    subject = subject or ''
+    body = body or ''
     text = f"{subject} {body}".lower()
 
     # Check X-Twitter first (high priority)
