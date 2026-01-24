@@ -1,0 +1,713 @@
+2026-01-22 21:01:23,937 - Orchestrator - INFO - Loading configuration from C:\Users\scott\ebay-automation\rules\scott_config.yaml
+2026-01-22 21:01:23,942 - Orchestrator - INFO - --- DRY RUN MODE ENABLED (No changes will be made) ---
+2026-01-22 21:01:23,942 - Orchestrator - INFO - Initializing profile: scott_organizer
+2026-01-22 21:01:24,035 - Automator-scott - INFO - Connected to 'Scott' (139 items)
+2026-01-22 21:01:24,035 - Automator-scott - INFO - Starting automation for profile: scott_organizer
+2026-01-22 21:01:24,036 - Automator-scott - INFO - --- Running Action: trend_scout (discover_new_keywords) ---
+2026-01-22 21:01:24,039 - Action-DiscoveryAction - INFO - Loaded 138 known keywords to ignore.
+2026-01-22 21:01:24,555 - Action-DiscoveryAction - INFO - Analyzing 100 emails for novel terms...
+2026-01-22 21:01:24,561 - Action-DiscoveryAction - INFO - 
+--- EMERGING KEYWORDS REPORT (Dry Run) ---
+2026-01-22 21:01:24,561 - Action-DiscoveryAction - INFO -   post: 101
+2026-01-22 21:01:24,561 - Action-DiscoveryAction - INFO -   httpseatwimgcomemailself_servemediaspacerpng: 100
+2026-01-22 21:01:24,561 - Action-DiscoveryAction - INFO -   httpseatwimgcomemailself_servemedialogo_twitter1497383721365png: 100
+2026-01-22 21:01:24,561 - Action-DiscoveryAction - INFO -   httpseatwimgcomself_servemediaspacer_464x11582829598167png: 100
+2026-01-22 21:01:24,561 - Action-DiscoveryAction - INFO -   httpsxcomwildmindais43: 33
+2026-01-22 21:01:24,561 - Action-DiscoveryAction - INFO -   code: 29
+2026-01-22 21:01:24,561 - Action-DiscoveryAction - INFO -   wildminder: 22
+2026-01-22 21:01:24,561 - Action-DiscoveryAction - INFO -   httpsxcomcocktailpeanuts43: 18
+2026-01-22 21:01:24,561 - Action-DiscoveryAction - INFO -   skills: 18
+2026-01-22 21:01:24,561 - Action-DiscoveryAction - INFO -   httpsxcombchernys43: 18
+2026-01-22 21:01:24,561 - Action-DiscoveryAction - INFO -   prompt: 17
+2026-01-22 21:01:24,561 - Action-DiscoveryAction - INFO -   remotion: 17
+2026-01-22 21:01:24,561 - Action-DiscoveryAction - INFO -   agent: 16
+2026-01-22 21:01:24,561 - Action-DiscoveryAction - INFO -   cocktail: 12
+2026-01-22 21:01:24,562 - Action-DiscoveryAction - INFO -   peanut: 12
+2026-01-22 21:01:24,562 - Action-DiscoveryAction - INFO -   boris: 12
+2026-01-22 21:01:24,562 - Action-DiscoveryAction - INFO -   cherny: 12
+2026-01-22 21:01:24,562 - Action-DiscoveryAction - INFO -   wildmindai: 11
+2026-01-22 21:01:24,562 - Action-DiscoveryAction - INFO -   works: 11
+2026-01-22 21:01:24,562 - Action-DiscoveryAction - INFO -   models: 10
+2026-01-22 21:01:24,562 - Action-DiscoveryAction - INFO -   image: 9
+2026-01-22 21:01:24,562 - Action-DiscoveryAction - INFO -   model: 9
+2026-01-22 21:01:24,562 - Action-DiscoveryAction - INFO -   httpsxcomgregpr07s43: 9
+2026-01-22 21:01:24,562 - Action-DiscoveryAction - INFO -   best: 8
+2026-01-22 21:01:24,562 - Action-DiscoveryAction - INFO -   here: 8
+2026-01-22 21:01:24,562 - Action-DiscoveryAction - INFO -   available: 8
+2026-01-22 21:01:24,562 - Action-DiscoveryAction - INFO -   skill: 8
+2026-01-22 21:01:24,562 - Action-DiscoveryAction - INFO -   made: 8
+2026-01-22 21:01:24,562 - Action-DiscoveryAction - INFO -   httpsxcomremotion: 8
+2026-01-22 21:01:24,562 - Action-DiscoveryAction - INFO -   voice: 8
+2026-01-22 21:01:24,562 - Action-DiscoveryAction - INFO -   into: 7
+2026-01-22 21:01:24,562 - Action-DiscoveryAction - INFO -   even: 7
+2026-01-22 21:01:24,562 - Action-DiscoveryAction - INFO -   cocktailpeanut: 7
+2026-01-22 21:01:24,562 - Action-DiscoveryAction - INFO -   generation: 7
+2026-01-22 21:01:24,562 - Action-DiscoveryAction - INFO -   using: 7
+2026-01-22 21:01:24,562 - Action-DiscoveryAction - INFO -   agents: 7
+2026-01-22 21:01:24,562 - Action-DiscoveryAction - INFO -   supabase: 7
+2026-01-22 21:01:24,563 - Action-DiscoveryAction - INFO -   only: 6
+2026-01-22 21:01:24,563 - Action-DiscoveryAction - INFO -   minutes: 6
+2026-01-22 21:01:24,563 - Action-DiscoveryAction - INFO -   introducing: 6
+2026-01-22 21:01:24,563 - Action-DiscoveryAction - INFO -   then: 6
+2026-01-22 21:01:24,563 - Action-DiscoveryAction - INFO -   httpsxcombrianroemmeles43: 6
+2026-01-22 21:01:24,563 - Action-DiscoveryAction - INFO -   been: 6
+2026-01-22 21:01:24,563 - Action-DiscoveryAction - INFO -   httpsxcomnikshepsvns43: 6
+2026-01-22 21:01:24,563 - Action-DiscoveryAction - INFO -   built: 6
+2026-01-22 21:01:24,563 - Action-DiscoveryAction - INFO -   httpsxcomsteveruizoks43: 6
+2026-01-22 21:01:24,563 - Action-DiscoveryAction - INFO -   actually: 6
+2026-01-22 21:01:24,563 - Action-DiscoveryAction - INFO -   httpsxcomwaynehsu_s43: 6
+2026-01-22 21:01:24,563 - Action-DiscoveryAction - INFO -   stripe: 6
+2026-01-22 21:01:24,563 - Action-DiscoveryAction - INFO -   httpsxcombehaviourtrees43: 6
+2026-01-22 21:01:24,564 - Action-DiscoveryAction - INFO -   httpseatwimgcomemailself_servemedialogo_twitter1497383721365png httpseatwimgcomself_servemediaspacer_464x11582829598167png: 100
+2026-01-22 21:01:24,564 - Action-DiscoveryAction - INFO -   cocktail peanut: 12
+2026-01-22 21:01:24,564 - Action-DiscoveryAction - INFO -   boris cherny: 12
+2026-01-22 21:01:24,564 - Action-DiscoveryAction - INFO -   httpsxcomwildmindais43 httpseatwimgcomemailself_servemediaspacerpng: 11
+2026-01-22 21:01:24,564 - Action-DiscoveryAction - INFO -   httpseatwimgcomemailself_servemediaspacerpng wildminder: 11
+2026-01-22 21:01:24,564 - Action-DiscoveryAction - INFO -   wildminder httpsxcomwildmindais43: 11
+2026-01-22 21:01:24,564 - Action-DiscoveryAction - INFO -   httpsxcomwildmindais43 wildmindai: 11
+2026-01-22 21:01:24,564 - Action-DiscoveryAction - INFO -   wildmindai httpsxcomwildmindais43: 11
+2026-01-22 21:01:24,564 - Action-DiscoveryAction - INFO -   httpsxcomwildmindais43 httpseatwimgcomemailself_servemedialogo_twitter1497383721365png: 11
+2026-01-22 21:01:24,564 - Action-DiscoveryAction - INFO -   remotion httpsxcomremotion: 8
+2026-01-22 21:01:24,564 - Action-DiscoveryAction - INFO -   httpsxcomcocktailpeanuts43 httpseatwimgcomemailself_servemediaspacerpng: 6
+2026-01-22 21:01:24,564 - Action-DiscoveryAction - INFO -   httpseatwimgcomemailself_servemediaspacerpng cocktail: 6
+2026-01-22 21:01:24,564 - Action-DiscoveryAction - INFO -   peanut httpsxcomcocktailpeanuts43: 6
+2026-01-22 21:01:24,564 - Action-DiscoveryAction - INFO -   httpsxcomcocktailpeanuts43 cocktailpeanut: 6
+2026-01-22 21:01:24,565 - Action-DiscoveryAction - INFO -   cocktailpeanut httpsxcomcocktailpeanuts43: 6
+2026-01-22 21:01:24,565 - Action-DiscoveryAction - INFO -   httpsxcomcocktailpeanuts43 httpseatwimgcomemailself_servemedialogo_twitter1497383721365png: 6
+2026-01-22 21:01:24,565 - Action-DiscoveryAction - INFO -   httpseatwimgcomself_servemediaspacer_464x11582829598167png introducing: 6
+2026-01-22 21:01:24,565 - Action-DiscoveryAction - INFO -   httpsxcombchernys43 httpseatwimgcomemailself_servemediaspacerpng: 6
+2026-01-22 21:01:24,565 - Action-DiscoveryAction - INFO -   httpseatwimgcomemailself_servemediaspacerpng boris: 6
+2026-01-22 21:01:24,565 - Action-DiscoveryAction - INFO -   cherny httpsxcombchernys43: 6
+2026-01-22 21:01:24,566 - Automator-scott - INFO - --- Running Action: ingest_wisdom (ingest_to_knowledge_base) ---
+2026-01-22 21:01:25,197 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2026-01-22 21:01:25,310 - KnowledgeBase - INFO - Connected to Knowledge Base at C:\Users\scott\ebay-automation\data\knowledge_base
+2026-01-22 21:01:25,367 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Wildminder on X (Tags: [])
+2026-01-22 21:01:25,527 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by God of Prompt on X (Tags: [])
+2026-01-22 21:01:25,566 - Action-IngestAction - INFO - [DRY RUN] Would have ingested 2 entries.
+2026-01-22 21:01:25,567 - Automator-scott - INFO - --- Running Action: organize_keywords (move_based_on_keywords) ---
+2026-01-22 21:01:25,583 - Automator-scott - ERROR - Error executing action class 'MoveAction': expected an indented block after 'else' statement on line 64 (move_action.py, line 65)
+Traceback (most recent call last):
+  File "C:\Users\scott\ebay-automation\actions\folder_automator.py", line 87, in _dispatch_action
+    module = __import__(module_path, fromlist=[class_name])
+  File "C:\Users\scott\ebay-automation\actions\move_action.py", line 65
+    else:
+    ^^^^
+IndentationError: expected an indented block after 'else' statement on line 64
+2026-01-22 21:01:25,584 - Orchestrator - INFO - Orchestration complete.
+2026-01-23 12:04:45,469 - Orchestrator - INFO - Loading configuration from C:\Users\scott\ebay-automation\rules\scott_config.yaml
+2026-01-23 12:04:45,475 - Orchestrator - INFO - --- DRY RUN MODE ENABLED (No changes will be made) ---
+2026-01-23 12:04:45,475 - Orchestrator - INFO - Initializing profile: scott_organizer
+2026-01-23 12:04:45,567 - Automator-scott - INFO - Connected to 'Scott' (278 items)
+2026-01-23 12:04:45,567 - Automator-scott - INFO - Starting automation for profile: scott_organizer
+2026-01-23 12:04:45,567 - Automator-scott - INFO - --- Running Action: trend_scout (discover_new_keywords) ---
+2026-01-23 12:04:45,568 - Action-DiscoveryAction - INFO - Loaded 138 known keywords to ignore.
+2026-01-23 12:04:46,020 - Action-DiscoveryAction - INFO - Analyzing 100 emails for novel terms...
+2026-01-23 12:04:46,025 - Action-DiscoveryAction - INFO - 
+--- EMERGING KEYWORDS REPORT (Dry Run) ---
+2026-01-23 12:04:46,025 - Action-DiscoveryAction - INFO -   post: 93
+2026-01-23 12:04:46,025 - Action-DiscoveryAction - INFO -   httpseatwimgcomemailself_servemediaspacerpng: 90
+2026-01-23 12:04:46,025 - Action-DiscoveryAction - INFO -   httpseatwimgcomemailself_servemedialogo_twitter1497383721365png: 90
+2026-01-23 12:04:46,025 - Action-DiscoveryAction - INFO -   httpseatwimgcomself_servemediaspacer_464x11582829598167png: 90
+2026-01-23 12:04:46,025 - Action-DiscoveryAction - INFO -   httpsxcompurzbeatss43: 24
+2026-01-23 12:04:46,025 - Action-DiscoveryAction - INFO -   purzai: 16
+2026-01-23 12:04:46,025 - Action-DiscoveryAction - INFO -   httpsxcomcomfyuis43: 15
+2026-01-23 12:04:46,025 - Action-DiscoveryAction - INFO -   models: 15
+2026-01-23 12:04:46,025 - Action-DiscoveryAction - INFO -   httpsxcomkatedeynekas43: 15
+2026-01-23 12:04:46,025 - Action-DiscoveryAction - INFO -   code: 13
+2026-01-23 12:04:46,025 - Action-DiscoveryAction - INFO -   model: 12
+2026-01-23 12:04:46,026 - Action-DiscoveryAction - INFO -   httpsxcomskbulouss43: 12
+2026-01-23 12:04:46,026 - Action-DiscoveryAction - INFO -   into: 10
+2026-01-23 12:04:46,026 - Action-DiscoveryAction - INFO -   kate: 10
+2026-01-23 12:04:46,026 - Action-DiscoveryAction - INFO -   deyneka: 10
+2026-01-23 12:04:46,026 - Action-DiscoveryAction - INFO -   link: 9
+2026-01-23 12:04:46,026 - Action-DiscoveryAction - INFO -   purzbeats: 8
+2026-01-23 12:04:46,026 - Action-DiscoveryAction - INFO -   image: 8
+2026-01-23 12:04:46,026 - Action-DiscoveryAction - INFO -   here: 7
+2026-01-23 12:04:46,026 - Action-DiscoveryAction - INFO -   released: 7
+2026-01-23 12:04:46,026 - Action-DiscoveryAction - INFO -   voice: 7
+2026-01-23 12:04:46,026 - Action-DiscoveryAction - INFO -   flow: 7
+2026-01-23 12:04:46,026 - Action-DiscoveryAction - INFO -   update: 6
+2026-01-23 12:04:46,026 - Action-DiscoveryAction - INFO -   httpsxcomjoesparkss43: 6
+2026-01-23 12:04:46,026 - Action-DiscoveryAction - INFO -   httpsxcommachinedelusions43: 6
+2026-01-23 12:04:46,026 - Action-DiscoveryAction - INFO -   single: 6
+2026-01-23 12:04:46,026 - Action-DiscoveryAction - INFO -   httpsxcomalibaba_qwens43: 6
+2026-01-23 12:04:46,026 - Action-DiscoveryAction - INFO -   leonardoai: 6
+2026-01-23 12:04:46,027 - Action-DiscoveryAction - INFO -   httpsxcomleonardoais43: 6
+2026-01-23 12:04:46,027 - Action-DiscoveryAction - INFO -   httpsxcomjerrod_lews43: 6
+2026-01-23 12:04:46,027 - Action-DiscoveryAction - INFO -   httpsxcomyawarnihals43: 6
+2026-01-23 12:04:46,027 - Action-DiscoveryAction - INFO -   httpsxcomhaochenshi74s43: 6
+2026-01-23 12:04:46,027 - Action-DiscoveryAction - INFO -   httpsxcomdevops_nks43: 6
+2026-01-23 12:04:46,027 - Action-DiscoveryAction - INFO -   good: 5
+2026-01-23 12:04:46,027 - Action-DiscoveryAction - INFO -   only: 5
+2026-01-23 12:04:46,027 - Action-DiscoveryAction - INFO -   machine: 5
+2026-01-23 12:04:46,027 - Action-DiscoveryAction - INFO -   open: 5
+2026-01-23 12:04:46,027 - Action-DiscoveryAction - INFO -   every: 5
+2026-01-23 12:04:46,027 - Action-DiscoveryAction - INFO -   been: 5
+2026-01-23 12:04:46,027 - Action-DiscoveryAction - INFO -   also: 5
+2026-01-23 12:04:46,027 - Action-DiscoveryAction - INFO -   prompts: 5
+2026-01-23 12:04:46,027 - Action-DiscoveryAction - INFO -   opensourced: 5
+2026-01-23 12:04:46,027 - Action-DiscoveryAction - INFO -   were: 5
+2026-01-23 12:04:46,027 - Action-DiscoveryAction - INFO -   vllm: 5
+2026-01-23 12:04:46,027 - Action-DiscoveryAction - INFO -   studio: 5
+2026-01-23 12:04:46,027 - Action-DiscoveryAction - INFO -   realtime: 5
+2026-01-23 12:04:46,028 - Action-DiscoveryAction - INFO -   katedeyneka: 5
+2026-01-23 12:04:46,028 - Action-DiscoveryAction - INFO -   httpsxcompurzbeatsstatus2013879533691174954s43txsz5qiypm0khday1kd4jiw: 4
+2026-01-23 12:04:46,028 - Action-DiscoveryAction - INFO -   going: 4
+2026-01-23 12:04:46,028 - Action-DiscoveryAction - INFO -   kjnodes: 4
+2026-01-23 12:04:46,028 - Action-DiscoveryAction - INFO -   httpseatwimgcomemailself_servemedialogo_twitter1497383721365png httpseatwimgcomself_servemediaspacer_464x11582829598167png: 90
+2026-01-23 12:04:46,028 - Action-DiscoveryAction - INFO -   kate deyneka: 10
+2026-01-23 12:04:46,028 - Action-DiscoveryAction - INFO -   httpsxcompurzbeatss43 httpseatwimgcomemailself_servemediaspacerpng: 8
+2026-01-23 12:04:46,028 - Action-DiscoveryAction - INFO -   httpseatwimgcomemailself_servemediaspacerpng purzai: 8
+2026-01-23 12:04:46,028 - Action-DiscoveryAction - INFO -   purzai httpsxcompurzbeatss43: 8
+2026-01-23 12:04:46,028 - Action-DiscoveryAction - INFO -   httpsxcompurzbeatss43 purzbeats: 8
+2026-01-23 12:04:46,028 - Action-DiscoveryAction - INFO -   purzbeats httpsxcompurzbeatss43: 8
+2026-01-23 12:04:46,028 - Action-DiscoveryAction - INFO -   httpsxcompurzbeatss43 httpseatwimgcomemailself_servemedialogo_twitter1497383721365png: 8
+2026-01-23 12:04:46,028 - Action-DiscoveryAction - INFO -   httpsxcomcomfyuis43 httpseatwimgcomemailself_servemediaspacerpng: 5
+2026-01-23 12:04:46,028 - Action-DiscoveryAction - INFO -   httpseatwimgcomemailself_servemediaspacerpng comfyui: 5
+2026-01-23 12:04:46,028 - Action-DiscoveryAction - INFO -   httpsxcomcomfyuis43 comfyui: 5
+2026-01-23 12:04:46,028 - Action-DiscoveryAction - INFO -   httpsxcomcomfyuis43 httpseatwimgcomemailself_servemedialogo_twitter1497383721365png: 5
+2026-01-23 12:04:46,028 - Action-DiscoveryAction - INFO -   httpsxcomkatedeynekas43 httpseatwimgcomemailself_servemediaspacerpng: 5
+2026-01-23 12:04:46,028 - Action-DiscoveryAction - INFO -   httpseatwimgcomemailself_servemediaspacerpng kate: 5
+2026-01-23 12:04:46,028 - Action-DiscoveryAction - INFO -   deyneka httpsxcomkatedeynekas43: 5
+2026-01-23 12:04:46,029 - Action-DiscoveryAction - INFO -   httpsxcomkatedeynekas43 katedeyneka: 5
+2026-01-23 12:04:46,029 - Action-DiscoveryAction - INFO -   katedeyneka httpsxcomkatedeynekas43: 5
+2026-01-23 12:04:46,029 - Action-DiscoveryAction - INFO -   httpsxcomkatedeynekas43 httpseatwimgcomemailself_servemedialogo_twitter1497383721365png: 5
+2026-01-23 12:04:46,029 - Action-DiscoveryAction - INFO -   machine delusions: 4
+2026-01-23 12:04:46,029 - Action-DiscoveryAction - INFO -   comfy cloud: 4
+2026-01-23 12:04:46,030 - Automator-scott - INFO - --- Running Action: ingest_wisdom (ingest_to_knowledge_base) ---
+2026-01-23 12:04:48,361 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2026-01-23 12:04:48,722 - KnowledgeBase - INFO - Connected to Knowledge Base at C:\Users\scott\ebay-automation\data\knowledge_base
+2026-01-23 12:04:48,822 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Purz.ai on X (Tags: ['ComfyUI-Workflows'])
+2026-01-23 12:04:48,837 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by ComfyUI on X (Tags: ['ComfyUI-Workflows', 'Social-Feed'])
+2026-01-23 12:04:48,845 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Pietro Schirano on X (Tags: ['Social-Feed'])
+2026-01-23 12:04:48,860 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Adithya S K on X (Tags: ['Social-Feed'])
+2026-01-23 12:04:48,868 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Ben Williams on X (Tags: ['Social-Feed'])
+2026-01-23 12:04:48,878 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by TechHalla on X (Tags: ['Social-Feed'])
+2026-01-23 12:04:48,892 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Qwen on X (Tags: ['Social-Feed'])
+2026-01-23 12:04:48,899 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Junyang Lin on X (Tags: ['Social-Feed'])
+2026-01-23 12:04:48,913 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by 0xSero on X (Tags: ['Social-Feed'])
+2026-01-23 12:04:48,920 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by vLLM on X (Tags: ['Social-Feed'])
+2026-01-23 12:04:48,926 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by huihui.ai on X (Tags: ['Social-Feed'])
+2026-01-23 12:04:48,938 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Greg Kamradt on X (Tags: ['Social-Feed'])
+2026-01-23 12:04:48,954 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Leonardo.Ai on X (Tags: ['Social-Feed'])
+2026-01-23 12:04:48,974 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Matt Pocock on X (Tags: ['Social-Feed'])
+2026-01-23 12:04:48,981 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Jafar Najafov on X (Tags: ['Social-Feed'])
+2026-01-23 12:04:48,993 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Nguyen Le on X (Tags: ['Social-Feed'])
+2026-01-23 12:04:48,999 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Simon Willison on X (Tags: ['Social-Feed'])
+2026-01-23 12:04:49,007 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Prince Canuma on X (Tags: ['Social-Feed'])
+2026-01-23 12:04:49,013 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by MayorkingAI on X (Tags: ['Social-Feed'])
+2026-01-23 12:04:49,020 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Linum on X (Tags: ['Social-Feed'])
+2026-01-23 12:04:49,045 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Lior Alexander on X (Tags: ['Social-Feed'])
+2026-01-23 12:04:49,053 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Yawar Siddiqui on X (Tags: ['Social-Feed'])
+2026-01-23 12:04:49,069 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by ComfyUI on X (Tags: ['ComfyUI-Workflows', 'Social-Feed'])
+2026-01-23 12:04:49,070 - Action-IngestAction - INFO - [DRY RUN] Would have ingested 26 entries.
+2026-01-23 12:04:49,071 - Automator-scott - INFO - --- Running Action: organize_keywords (move_based_on_keywords) ---
+2026-01-23 12:04:49,079 - Automator-scott - ERROR - Error executing action class 'MoveAction': expected an indented block after 'else' statement on line 64 (move_action.py, line 65)
+Traceback (most recent call last):
+  File "C:\Users\scott\ebay-automation\actions\folder_automator.py", line 87, in _dispatch_action
+    module = __import__(module_path, fromlist=[class_name])
+  File "C:\Users\scott\ebay-automation\actions\move_action.py", line 65
+    else:
+    ^^^^
+IndentationError: expected an indented block after 'else' statement on line 64
+2026-01-23 12:04:49,080 - Orchestrator - INFO - Orchestration complete.
+2026-01-23 12:15:29,734 - Orchestrator - INFO - Loading configuration from C:\Users\scott\ebay-automation\rules\scott_config.yaml
+2026-01-23 12:15:29,739 - Orchestrator - INFO - --- DRY RUN MODE ENABLED (No changes will be made) ---
+2026-01-23 12:15:29,739 - Orchestrator - INFO - Initializing profile: scott_organizer
+2026-01-23 12:15:29,843 - Automator-scott - INFO - Connected to 'Scott' (278 items)
+2026-01-23 12:15:29,844 - Automator-scott - INFO - Starting automation for profile: scott_organizer
+2026-01-23 12:15:29,844 - Automator-scott - INFO - --- Running Action: trend_scout (discover_new_keywords) ---
+2026-01-23 12:15:29,845 - Action-DiscoveryAction - INFO - Loaded 138 known keywords to ignore.
+2026-01-23 12:15:30,326 - Action-DiscoveryAction - INFO - Analyzing 100 emails for novel terms...
+2026-01-23 12:15:30,331 - Action-DiscoveryAction - INFO - 
+--- EMERGING KEYWORDS REPORT (Dry Run) ---
+2026-01-23 12:15:30,331 - Action-DiscoveryAction - INFO -   post: 93
+2026-01-23 12:15:30,331 - Action-DiscoveryAction - INFO -   httpseatwimgcomemailself_servemediaspacerpng: 90
+2026-01-23 12:15:30,331 - Action-DiscoveryAction - INFO -   httpseatwimgcomemailself_servemedialogo_twitter1497383721365png: 90
+2026-01-23 12:15:30,331 - Action-DiscoveryAction - INFO -   httpseatwimgcomself_servemediaspacer_464x11582829598167png: 90
+2026-01-23 12:15:30,332 - Action-DiscoveryAction - INFO -   httpsxcompurzbeatss43: 24
+2026-01-23 12:15:30,332 - Action-DiscoveryAction - INFO -   purzai: 16
+2026-01-23 12:15:30,332 - Action-DiscoveryAction - INFO -   httpsxcomcomfyuis43: 15
+2026-01-23 12:15:30,332 - Action-DiscoveryAction - INFO -   models: 15
+2026-01-23 12:15:30,332 - Action-DiscoveryAction - INFO -   httpsxcomkatedeynekas43: 15
+2026-01-23 12:15:30,332 - Action-DiscoveryAction - INFO -   code: 13
+2026-01-23 12:15:30,332 - Action-DiscoveryAction - INFO -   model: 12
+2026-01-23 12:15:30,332 - Action-DiscoveryAction - INFO -   httpsxcomskbulouss43: 12
+2026-01-23 12:15:30,332 - Action-DiscoveryAction - INFO -   into: 10
+2026-01-23 12:15:30,332 - Action-DiscoveryAction - INFO -   kate: 10
+2026-01-23 12:15:30,332 - Action-DiscoveryAction - INFO -   deyneka: 10
+2026-01-23 12:15:30,332 - Action-DiscoveryAction - INFO -   link: 9
+2026-01-23 12:15:30,332 - Action-DiscoveryAction - INFO -   purzbeats: 8
+2026-01-23 12:15:30,332 - Action-DiscoveryAction - INFO -   image: 8
+2026-01-23 12:15:30,332 - Action-DiscoveryAction - INFO -   here: 7
+2026-01-23 12:15:30,332 - Action-DiscoveryAction - INFO -   released: 7
+2026-01-23 12:15:30,333 - Action-DiscoveryAction - INFO -   voice: 7
+2026-01-23 12:15:30,333 - Action-DiscoveryAction - INFO -   flow: 7
+2026-01-23 12:15:30,333 - Action-DiscoveryAction - INFO -   update: 6
+2026-01-23 12:15:30,333 - Action-DiscoveryAction - INFO -   httpsxcomjoesparkss43: 6
+2026-01-23 12:15:30,333 - Action-DiscoveryAction - INFO -   httpsxcommachinedelusions43: 6
+2026-01-23 12:15:30,333 - Action-DiscoveryAction - INFO -   single: 6
+2026-01-23 12:15:30,333 - Action-DiscoveryAction - INFO -   httpsxcomalibaba_qwens43: 6
+2026-01-23 12:15:30,333 - Action-DiscoveryAction - INFO -   leonardoai: 6
+2026-01-23 12:15:30,333 - Action-DiscoveryAction - INFO -   httpsxcomleonardoais43: 6
+2026-01-23 12:15:30,333 - Action-DiscoveryAction - INFO -   httpsxcomjerrod_lews43: 6
+2026-01-23 12:15:30,333 - Action-DiscoveryAction - INFO -   httpsxcomyawarnihals43: 6
+2026-01-23 12:15:30,333 - Action-DiscoveryAction - INFO -   httpsxcomhaochenshi74s43: 6
+2026-01-23 12:15:30,333 - Action-DiscoveryAction - INFO -   httpsxcomdevops_nks43: 6
+2026-01-23 12:15:30,333 - Action-DiscoveryAction - INFO -   good: 5
+2026-01-23 12:15:30,333 - Action-DiscoveryAction - INFO -   only: 5
+2026-01-23 12:15:30,333 - Action-DiscoveryAction - INFO -   machine: 5
+2026-01-23 12:15:30,333 - Action-DiscoveryAction - INFO -   open: 5
+2026-01-23 12:15:30,333 - Action-DiscoveryAction - INFO -   every: 5
+2026-01-23 12:15:30,333 - Action-DiscoveryAction - INFO -   been: 5
+2026-01-23 12:15:30,334 - Action-DiscoveryAction - INFO -   also: 5
+2026-01-23 12:15:30,334 - Action-DiscoveryAction - INFO -   prompts: 5
+2026-01-23 12:15:30,334 - Action-DiscoveryAction - INFO -   opensourced: 5
+2026-01-23 12:15:30,334 - Action-DiscoveryAction - INFO -   were: 5
+2026-01-23 12:15:30,334 - Action-DiscoveryAction - INFO -   vllm: 5
+2026-01-23 12:15:30,334 - Action-DiscoveryAction - INFO -   studio: 5
+2026-01-23 12:15:30,334 - Action-DiscoveryAction - INFO -   realtime: 5
+2026-01-23 12:15:30,334 - Action-DiscoveryAction - INFO -   katedeyneka: 5
+2026-01-23 12:15:30,334 - Action-DiscoveryAction - INFO -   httpsxcompurzbeatsstatus2013879533691174954s43txsz5qiypm0khday1kd4jiw: 4
+2026-01-23 12:15:30,334 - Action-DiscoveryAction - INFO -   going: 4
+2026-01-23 12:15:30,334 - Action-DiscoveryAction - INFO -   kjnodes: 4
+2026-01-23 12:15:30,335 - Action-DiscoveryAction - INFO -   httpseatwimgcomemailself_servemedialogo_twitter1497383721365png httpseatwimgcomself_servemediaspacer_464x11582829598167png: 90
+2026-01-23 12:15:30,335 - Action-DiscoveryAction - INFO -   kate deyneka: 10
+2026-01-23 12:15:30,335 - Action-DiscoveryAction - INFO -   httpsxcompurzbeatss43 httpseatwimgcomemailself_servemediaspacerpng: 8
+2026-01-23 12:15:30,335 - Action-DiscoveryAction - INFO -   httpseatwimgcomemailself_servemediaspacerpng purzai: 8
+2026-01-23 12:15:30,335 - Action-DiscoveryAction - INFO -   purzai httpsxcompurzbeatss43: 8
+2026-01-23 12:15:30,335 - Action-DiscoveryAction - INFO -   httpsxcompurzbeatss43 purzbeats: 8
+2026-01-23 12:15:30,335 - Action-DiscoveryAction - INFO -   purzbeats httpsxcompurzbeatss43: 8
+2026-01-23 12:15:30,335 - Action-DiscoveryAction - INFO -   httpsxcompurzbeatss43 httpseatwimgcomemailself_servemedialogo_twitter1497383721365png: 8
+2026-01-23 12:15:30,335 - Action-DiscoveryAction - INFO -   httpsxcomcomfyuis43 httpseatwimgcomemailself_servemediaspacerpng: 5
+2026-01-23 12:15:30,335 - Action-DiscoveryAction - INFO -   httpseatwimgcomemailself_servemediaspacerpng comfyui: 5
+2026-01-23 12:15:30,335 - Action-DiscoveryAction - INFO -   httpsxcomcomfyuis43 comfyui: 5
+2026-01-23 12:15:30,335 - Action-DiscoveryAction - INFO -   httpsxcomcomfyuis43 httpseatwimgcomemailself_servemedialogo_twitter1497383721365png: 5
+2026-01-23 12:15:30,335 - Action-DiscoveryAction - INFO -   httpsxcomkatedeynekas43 httpseatwimgcomemailself_servemediaspacerpng: 5
+2026-01-23 12:15:30,335 - Action-DiscoveryAction - INFO -   httpseatwimgcomemailself_servemediaspacerpng kate: 5
+2026-01-23 12:15:30,335 - Action-DiscoveryAction - INFO -   deyneka httpsxcomkatedeynekas43: 5
+2026-01-23 12:15:30,335 - Action-DiscoveryAction - INFO -   httpsxcomkatedeynekas43 katedeyneka: 5
+2026-01-23 12:15:30,335 - Action-DiscoveryAction - INFO -   katedeyneka httpsxcomkatedeynekas43: 5
+2026-01-23 12:15:30,335 - Action-DiscoveryAction - INFO -   httpsxcomkatedeynekas43 httpseatwimgcomemailself_servemedialogo_twitter1497383721365png: 5
+2026-01-23 12:15:30,335 - Action-DiscoveryAction - INFO -   machine delusions: 4
+2026-01-23 12:15:30,336 - Action-DiscoveryAction - INFO -   comfy cloud: 4
+2026-01-23 12:15:30,338 - Automator-scott - INFO - --- Running Action: youtube_brain (process_youtube_videos) ---
+2026-01-23 12:15:31,032 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2026-01-23 12:15:31,300 - KnowledgeBase - INFO - Connected to Knowledge Base at C:\Users\scott\ebay-automation\data\knowledge_base
+2026-01-23 12:15:31,534 - Action-YouTubeAction - INFO - Found YouTube Video: EbY30K in 'Post by Yawar Siddiqui on X...'
+2026-01-23 12:15:31,534 - Action-YouTubeAction - WARNING -   No transcript found for EbY30K
+2026-01-23 12:15:32,587 - Action-YouTubeAction - WARNING -   No transcript found for 5YBjll
+2026-01-23 12:15:32,615 - Action-YouTubeAction - INFO - Found YouTube Video: Xtd4Dj in 'Post by Remotion on X...'
+2026-01-23 12:15:32,615 - Action-YouTubeAction - WARNING -   No transcript found for Xtd4Dj
+2026-01-23 12:15:32,661 - Action-YouTubeAction - INFO - Found YouTube Video: _IK18goX4X8 in 'Ralph Wiggum Matt Pocock...'
+2026-01-23 12:15:32,661 - Action-YouTubeAction - WARNING -   No transcript found for _IK18goX4X8
+2026-01-23 12:15:32,662 - Automator-scott - INFO - --- Running Action: ingest_wisdom (ingest_to_knowledge_base) ---
+2026-01-23 12:15:32,681 - KnowledgeBase - INFO - Connected to Knowledge Base at C:\Users\scott\ebay-automation\data\knowledge_base
+2026-01-23 12:15:32,761 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Purz.ai on X (Tags: ['ComfyUI-Workflows', 'Social-Feed'])
+2026-01-23 12:15:32,782 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by ComfyUI on X (Tags: ['ComfyUI-Workflows', 'Social-Feed'])
+2026-01-23 12:15:32,790 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Pietro Schirano on X (Tags: ['Social-Feed'])
+2026-01-23 12:15:32,811 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Adithya S K on X (Tags: ['Social-Feed'])
+2026-01-23 12:15:32,820 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Ben Williams on X (Tags: ['Social-Feed'])
+2026-01-23 12:15:32,833 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by TechHalla on X (Tags: ['Social-Feed'])
+2026-01-23 12:15:32,845 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Qwen on X (Tags: ['Social-Feed'])
+2026-01-23 12:15:32,852 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Junyang Lin on X (Tags: ['Social-Feed'])
+2026-01-23 12:15:32,860 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Zed on X (Tags: ['Social-Feed'])
+2026-01-23 12:15:32,867 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by 0xSero on X (Tags: ['Social-Feed'])
+2026-01-23 12:15:32,877 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by vLLM on X (Tags: ['Social-Feed'])
+2026-01-23 12:15:32,883 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by huihui.ai on X (Tags: ['Social-Feed'])
+2026-01-23 12:15:32,895 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Greg Kamradt on X (Tags: ['Social-Feed'])
+2026-01-23 12:15:32,912 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Leonardo.Ai on X (Tags: ['Social-Feed'])
+2026-01-23 12:15:32,935 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Matt Pocock on X (Tags: ['Social-Feed'])
+2026-01-23 12:15:32,941 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Jafar Najafov on X (Tags: ['Social-Feed'])
+2026-01-23 12:15:32,954 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Nguyen Le on X (Tags: ['Social-Feed'])
+2026-01-23 12:15:32,960 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Simon Willison on X (Tags: ['Social-Feed'])
+2026-01-23 12:15:32,966 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Prince Canuma on X (Tags: ['Social-Feed'])
+2026-01-23 12:15:32,973 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by MayorkingAI on X (Tags: ['Social-Feed'])
+2026-01-23 12:15:32,980 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Linum on X (Tags: ['Social-Feed'])
+2026-01-23 12:15:32,994 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Blendi on X (Tags: ['Social-Feed'])
+2026-01-23 12:15:33,005 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Lior Alexander on X (Tags: ['Social-Feed'])
+2026-01-23 12:15:33,013 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Yawar Siddiqui on X (Tags: ['Social-Feed'])
+2026-01-23 12:15:33,031 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by ComfyUI on X (Tags: ['ComfyUI-Workflows', 'Social-Feed'])
+2026-01-23 12:15:33,032 - Action-IngestAction - INFO - [DRY RUN] Would have ingested 28 entries.
+2026-01-23 12:15:33,033 - Automator-scott - INFO - --- Running Action: organize_keywords (move_based_on_keywords) ---
+2026-01-23 12:15:33,034 - Automator-scott - ERROR - Error executing action class 'MoveAction': expected an indented block after 'else' statement on line 64 (move_action.py, line 65)
+Traceback (most recent call last):
+  File "C:\Users\scott\ebay-automation\actions\folder_automator.py", line 88, in _dispatch_action
+    module = __import__(module_path, fromlist=[class_name])
+  File "C:\Users\scott\ebay-automation\actions\move_action.py", line 65
+    else:
+    ^^^^
+IndentationError: expected an indented block after 'else' statement on line 64
+2026-01-23 12:15:33,034 - Orchestrator - INFO - Orchestration complete.
+2026-01-23 12:16:19,704 - Orchestrator - INFO - Loading configuration from C:\Users\scott\ebay-automation\rules\scott_config.yaml
+2026-01-23 12:16:19,710 - Orchestrator - INFO - --- DRY RUN MODE ENABLED (No changes will be made) ---
+2026-01-23 12:16:19,710 - Orchestrator - INFO - Initializing profile: scott_organizer
+2026-01-23 12:16:19,782 - Automator-scott - INFO - Connected to 'Scott' (278 items)
+2026-01-23 12:16:19,782 - Automator-scott - INFO - Starting automation for profile: scott_organizer
+2026-01-23 12:16:19,783 - Automator-scott - INFO - --- Running Action: trend_scout (discover_new_keywords) ---
+2026-01-23 12:16:19,784 - Action-DiscoveryAction - INFO - Loaded 138 known keywords to ignore.
+2026-01-23 12:16:20,269 - Action-DiscoveryAction - INFO - Analyzing 100 emails for novel terms...
+2026-01-23 12:16:20,274 - Action-DiscoveryAction - INFO - 
+--- EMERGING KEYWORDS REPORT (Dry Run) ---
+2026-01-23 12:16:20,274 - Action-DiscoveryAction - INFO -   post: 93
+2026-01-23 12:16:20,274 - Action-DiscoveryAction - INFO -   httpseatwimgcomemailself_servemediaspacerpng: 90
+2026-01-23 12:16:20,274 - Action-DiscoveryAction - INFO -   httpseatwimgcomemailself_servemedialogo_twitter1497383721365png: 90
+2026-01-23 12:16:20,274 - Action-DiscoveryAction - INFO -   httpseatwimgcomself_servemediaspacer_464x11582829598167png: 90
+2026-01-23 12:16:20,274 - Action-DiscoveryAction - INFO -   httpsxcompurzbeatss43: 24
+2026-01-23 12:16:20,275 - Action-DiscoveryAction - INFO -   purzai: 16
+2026-01-23 12:16:20,275 - Action-DiscoveryAction - INFO -   httpsxcomcomfyuis43: 15
+2026-01-23 12:16:20,275 - Action-DiscoveryAction - INFO -   models: 15
+2026-01-23 12:16:20,275 - Action-DiscoveryAction - INFO -   httpsxcomkatedeynekas43: 15
+2026-01-23 12:16:20,275 - Action-DiscoveryAction - INFO -   code: 13
+2026-01-23 12:16:20,275 - Action-DiscoveryAction - INFO -   model: 12
+2026-01-23 12:16:20,275 - Action-DiscoveryAction - INFO -   httpsxcomskbulouss43: 12
+2026-01-23 12:16:20,275 - Action-DiscoveryAction - INFO -   into: 10
+2026-01-23 12:16:20,275 - Action-DiscoveryAction - INFO -   kate: 10
+2026-01-23 12:16:20,275 - Action-DiscoveryAction - INFO -   deyneka: 10
+2026-01-23 12:16:20,275 - Action-DiscoveryAction - INFO -   link: 9
+2026-01-23 12:16:20,275 - Action-DiscoveryAction - INFO -   purzbeats: 8
+2026-01-23 12:16:20,275 - Action-DiscoveryAction - INFO -   image: 8
+2026-01-23 12:16:20,275 - Action-DiscoveryAction - INFO -   here: 7
+2026-01-23 12:16:20,275 - Action-DiscoveryAction - INFO -   released: 7
+2026-01-23 12:16:20,275 - Action-DiscoveryAction - INFO -   voice: 7
+2026-01-23 12:16:20,276 - Action-DiscoveryAction - INFO -   flow: 7
+2026-01-23 12:16:20,276 - Action-DiscoveryAction - INFO -   update: 6
+2026-01-23 12:16:20,276 - Action-DiscoveryAction - INFO -   httpsxcomjoesparkss43: 6
+2026-01-23 12:16:20,276 - Action-DiscoveryAction - INFO -   httpsxcommachinedelusions43: 6
+2026-01-23 12:16:20,276 - Action-DiscoveryAction - INFO -   single: 6
+2026-01-23 12:16:20,276 - Action-DiscoveryAction - INFO -   httpsxcomalibaba_qwens43: 6
+2026-01-23 12:16:20,276 - Action-DiscoveryAction - INFO -   leonardoai: 6
+2026-01-23 12:16:20,276 - Action-DiscoveryAction - INFO -   httpsxcomleonardoais43: 6
+2026-01-23 12:16:20,276 - Action-DiscoveryAction - INFO -   httpsxcomjerrod_lews43: 6
+2026-01-23 12:16:20,276 - Action-DiscoveryAction - INFO -   httpsxcomyawarnihals43: 6
+2026-01-23 12:16:20,276 - Action-DiscoveryAction - INFO -   httpsxcomhaochenshi74s43: 6
+2026-01-23 12:16:20,276 - Action-DiscoveryAction - INFO -   httpsxcomdevops_nks43: 6
+2026-01-23 12:16:20,276 - Action-DiscoveryAction - INFO -   good: 5
+2026-01-23 12:16:20,276 - Action-DiscoveryAction - INFO -   only: 5
+2026-01-23 12:16:20,276 - Action-DiscoveryAction - INFO -   machine: 5
+2026-01-23 12:16:20,276 - Action-DiscoveryAction - INFO -   open: 5
+2026-01-23 12:16:20,276 - Action-DiscoveryAction - INFO -   every: 5
+2026-01-23 12:16:20,276 - Action-DiscoveryAction - INFO -   been: 5
+2026-01-23 12:16:20,276 - Action-DiscoveryAction - INFO -   also: 5
+2026-01-23 12:16:20,277 - Action-DiscoveryAction - INFO -   prompts: 5
+2026-01-23 12:16:20,277 - Action-DiscoveryAction - INFO -   opensourced: 5
+2026-01-23 12:16:20,277 - Action-DiscoveryAction - INFO -   were: 5
+2026-01-23 12:16:20,277 - Action-DiscoveryAction - INFO -   vllm: 5
+2026-01-23 12:16:20,277 - Action-DiscoveryAction - INFO -   studio: 5
+2026-01-23 12:16:20,277 - Action-DiscoveryAction - INFO -   realtime: 5
+2026-01-23 12:16:20,277 - Action-DiscoveryAction - INFO -   katedeyneka: 5
+2026-01-23 12:16:20,277 - Action-DiscoveryAction - INFO -   httpsxcompurzbeatsstatus2013879533691174954s43txsz5qiypm0khday1kd4jiw: 4
+2026-01-23 12:16:20,277 - Action-DiscoveryAction - INFO -   going: 4
+2026-01-23 12:16:20,277 - Action-DiscoveryAction - INFO -   kjnodes: 4
+2026-01-23 12:16:20,277 - Action-DiscoveryAction - INFO -   httpseatwimgcomemailself_servemedialogo_twitter1497383721365png httpseatwimgcomself_servemediaspacer_464x11582829598167png: 90
+2026-01-23 12:16:20,277 - Action-DiscoveryAction - INFO -   kate deyneka: 10
+2026-01-23 12:16:20,277 - Action-DiscoveryAction - INFO -   httpsxcompurzbeatss43 httpseatwimgcomemailself_servemediaspacerpng: 8
+2026-01-23 12:16:20,277 - Action-DiscoveryAction - INFO -   httpseatwimgcomemailself_servemediaspacerpng purzai: 8
+2026-01-23 12:16:20,277 - Action-DiscoveryAction - INFO -   purzai httpsxcompurzbeatss43: 8
+2026-01-23 12:16:20,277 - Action-DiscoveryAction - INFO -   httpsxcompurzbeatss43 purzbeats: 8
+2026-01-23 12:16:20,277 - Action-DiscoveryAction - INFO -   purzbeats httpsxcompurzbeatss43: 8
+2026-01-23 12:16:20,277 - Action-DiscoveryAction - INFO -   httpsxcompurzbeatss43 httpseatwimgcomemailself_servemedialogo_twitter1497383721365png: 8
+2026-01-23 12:16:20,278 - Action-DiscoveryAction - INFO -   httpsxcomcomfyuis43 httpseatwimgcomemailself_servemediaspacerpng: 5
+2026-01-23 12:16:20,278 - Action-DiscoveryAction - INFO -   httpseatwimgcomemailself_servemediaspacerpng comfyui: 5
+2026-01-23 12:16:20,278 - Action-DiscoveryAction - INFO -   httpsxcomcomfyuis43 comfyui: 5
+2026-01-23 12:16:20,278 - Action-DiscoveryAction - INFO -   httpsxcomcomfyuis43 httpseatwimgcomemailself_servemedialogo_twitter1497383721365png: 5
+2026-01-23 12:16:20,278 - Action-DiscoveryAction - INFO -   httpsxcomkatedeynekas43 httpseatwimgcomemailself_servemediaspacerpng: 5
+2026-01-23 12:16:20,278 - Action-DiscoveryAction - INFO -   httpseatwimgcomemailself_servemediaspacerpng kate: 5
+2026-01-23 12:16:20,278 - Action-DiscoveryAction - INFO -   deyneka httpsxcomkatedeynekas43: 5
+2026-01-23 12:16:20,278 - Action-DiscoveryAction - INFO -   httpsxcomkatedeynekas43 katedeyneka: 5
+2026-01-23 12:16:20,278 - Action-DiscoveryAction - INFO -   katedeyneka httpsxcomkatedeynekas43: 5
+2026-01-23 12:16:20,278 - Action-DiscoveryAction - INFO -   httpsxcomkatedeynekas43 httpseatwimgcomemailself_servemedialogo_twitter1497383721365png: 5
+2026-01-23 12:16:20,278 - Action-DiscoveryAction - INFO -   machine delusions: 4
+2026-01-23 12:16:20,278 - Action-DiscoveryAction - INFO -   comfy cloud: 4
+2026-01-23 12:16:20,280 - Automator-scott - INFO - --- Running Action: youtube_brain (process_youtube_videos) ---
+2026-01-23 12:16:20,929 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2026-01-23 12:16:21,003 - KnowledgeBase - INFO - Connected to Knowledge Base at C:\Users\scott\ebay-automation\data\knowledge_base
+2026-01-23 12:16:21,245 - Action-YouTubeAction - INFO - Found YouTube Video: EbY30K in 'Post by Yawar Siddiqui on X...'
+2026-01-23 12:16:21,245 - Action-YouTubeAction - WARNING -   No transcript found for EbY30K
+2026-01-23 12:16:22,309 - Action-YouTubeAction - WARNING -   No transcript found for 5YBjll
+2026-01-23 12:16:22,347 - Action-YouTubeAction - INFO - Found YouTube Video: Xtd4Dj in 'Post by Remotion on X...'
+2026-01-23 12:16:22,347 - Action-YouTubeAction - WARNING -   No transcript found for Xtd4Dj
+2026-01-23 12:16:22,391 - Action-YouTubeAction - INFO - Found YouTube Video: _IK18goX4X8 in 'Ralph Wiggum Matt Pocock...'
+2026-01-23 12:16:22,391 - Action-YouTubeAction - WARNING -   No transcript found for _IK18goX4X8
+2026-01-23 12:16:22,392 - Automator-scott - INFO - --- Running Action: ingest_wisdom (ingest_to_knowledge_base) ---
+2026-01-23 12:16:22,414 - KnowledgeBase - INFO - Connected to Knowledge Base at C:\Users\scott\ebay-automation\data\knowledge_base
+2026-01-23 12:16:22,472 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Purz.ai on X (Tags: ['ComfyUI-Workflows', 'Social-Feed'])
+2026-01-23 12:16:22,490 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by ComfyUI on X (Tags: ['ComfyUI-Workflows', 'Social-Feed'])
+2026-01-23 12:16:22,497 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Pietro Schirano on X (Tags: ['Social-Feed'])
+2026-01-23 12:16:22,514 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Adithya S K on X (Tags: ['Social-Feed'])
+2026-01-23 12:16:22,521 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Ben Williams on X (Tags: ['Social-Feed'])
+2026-01-23 12:16:22,532 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by TechHalla on X (Tags: ['Social-Feed'])
+2026-01-23 12:16:22,543 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Qwen on X (Tags: ['Social-Feed'])
+2026-01-23 12:16:22,550 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Junyang Lin on X (Tags: ['Social-Feed'])
+2026-01-23 12:16:22,557 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Zed on X (Tags: ['Social-Feed'])
+2026-01-23 12:16:22,564 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by 0xSero on X (Tags: ['Social-Feed'])
+2026-01-23 12:16:22,571 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by vLLM on X (Tags: ['Social-Feed'])
+2026-01-23 12:16:22,578 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by huihui.ai on X (Tags: ['Social-Feed'])
+2026-01-23 12:16:22,591 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Greg Kamradt on X (Tags: ['Social-Feed'])
+2026-01-23 12:16:22,608 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Leonardo.Ai on X (Tags: ['Social-Feed'])
+2026-01-23 12:16:22,627 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Matt Pocock on X (Tags: ['Social-Feed'])
+2026-01-23 12:16:22,634 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Jafar Najafov on X (Tags: ['Social-Feed'])
+2026-01-23 12:16:22,647 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Nguyen Le on X (Tags: ['Social-Feed'])
+2026-01-23 12:16:22,653 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Simon Willison on X (Tags: ['Social-Feed'])
+2026-01-23 12:16:22,661 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Prince Canuma on X (Tags: ['Social-Feed'])
+2026-01-23 12:16:22,668 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by MayorkingAI on X (Tags: ['Social-Feed'])
+2026-01-23 12:16:22,678 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Linum on X (Tags: ['Social-Feed'])
+2026-01-23 12:16:22,700 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Blendi on X (Tags: ['Social-Feed'])
+2026-01-23 12:16:22,717 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Lior Alexander on X (Tags: ['Social-Feed'])
+2026-01-23 12:16:22,727 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Yawar Siddiqui on X (Tags: ['Social-Feed'])
+2026-01-23 12:16:22,747 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by ComfyUI on X (Tags: ['ComfyUI-Workflows', 'Social-Feed'])
+2026-01-23 12:16:22,748 - Action-IngestAction - INFO - [DRY RUN] Would have ingested 28 entries.
+2026-01-23 12:16:22,749 - Automator-scott - INFO - --- Running Action: organize_keywords (move_based_on_keywords) ---
+2026-01-23 12:16:22,750 - Automator-scott - ERROR - Error executing action class 'MoveAction': expected an indented block after 'else' statement on line 64 (move_action.py, line 65)
+Traceback (most recent call last):
+  File "C:\Users\scott\ebay-automation\actions\folder_automator.py", line 88, in _dispatch_action
+    module = __import__(module_path, fromlist=[class_name])
+  File "C:\Users\scott\ebay-automation\actions\move_action.py", line 65
+    else:
+    ^^^^
+IndentationError: expected an indented block after 'else' statement on line 64
+2026-01-23 12:16:22,750 - Orchestrator - INFO - Orchestration complete.
+2026-01-23 12:34:55,810 - Orchestrator - INFO - Loading configuration from C:\Users\scott\ebay-automation\rules\scott_safe_test.yaml
+2026-01-23 12:34:55,813 - Orchestrator - INFO - Initializing profile: scott_test_run
+2026-01-23 12:34:55,922 - Automator-scott - INFO - Connected to 'Scott' (278 items)
+2026-01-23 12:34:55,922 - Automator-scott - INFO - Starting automation for profile: scott_test_run
+2026-01-23 12:34:55,923 - Automator-scott - INFO - --- Running Action: youtube_brain (process_youtube_videos) ---
+2026-01-23 12:34:57,272 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2026-01-23 12:34:57,454 - KnowledgeBase - INFO - Connected to Knowledge Base at C:\Users\scott\ebay-automation\data\knowledge_base
+2026-01-23 12:34:57,830 - Action-YouTubeAction - INFO - Found YouTube Video: EbY30K in 'Post by Yawar Siddiqui on X...'
+2026-01-23 12:34:57,830 - Action-YouTubeAction - WARNING -   No transcript found for EbY30K
+2026-01-23 12:34:59,294 - Action-YouTubeAction - WARNING -   No transcript found for 5YBjll
+2026-01-23 12:34:59,329 - Action-YouTubeAction - INFO - Found YouTube Video: Xtd4Dj in 'Post by Remotion on X...'
+2026-01-23 12:34:59,329 - Action-YouTubeAction - WARNING -   No transcript found for Xtd4Dj
+2026-01-23 12:34:59,331 - Automator-scott - INFO - --- Running Action: ingest_wisdom (ingest_to_knowledge_base) ---
+2026-01-23 12:34:59,351 - KnowledgeBase - INFO - Connected to Knowledge Base at C:\Users\scott\ebay-automation\data\knowledge_base
+2026-01-23 12:34:59,978 - KnowledgeBase - INFO - Ingested 1 items into Knowledge Base.
+2026-01-23 12:34:59,979 - Action-IngestAction - INFO - Ingested 1 new entries.
+2026-01-23 12:34:59,980 - Orchestrator - INFO - Orchestration complete.
+2026-01-23 12:36:34,663 - Orchestrator - INFO - Loading configuration from C:\Users\scott\ebay-automation\rules\scott_safe_test.yaml
+2026-01-23 12:36:34,666 - Orchestrator - INFO - Initializing profile: scott_test_run
+2026-01-23 12:36:34,831 - Automator-scott - INFO - Connected to 'Scott' (278 items)
+2026-01-23 12:36:34,831 - Automator-scott - INFO - Starting automation for profile: scott_test_run
+2026-01-23 12:36:34,832 - Automator-scott - INFO - --- Running Action: youtube_brain (process_youtube_videos) ---
+2026-01-23 12:36:35,918 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2026-01-23 12:36:36,032 - KnowledgeBase - INFO - Connected to Knowledge Base at C:\Users\scott\ebay-automation\data\knowledge_base
+2026-01-23 12:36:36,429 - Action-YouTubeAction - INFO - Found YouTube Video: EbY30K in 'Post by Yawar Siddiqui on X...'
+2026-01-23 12:36:36,429 - Action-YouTubeAction - WARNING -   No transcript found for EbY30K
+2026-01-23 12:36:38,188 - Action-YouTubeAction - WARNING -   No transcript found for 5YBjll
+2026-01-23 12:36:38,241 - Action-YouTubeAction - INFO - Found YouTube Video: Xtd4Dj in 'Post by Remotion on X...'
+2026-01-23 12:36:38,241 - Action-YouTubeAction - WARNING -   No transcript found for Xtd4Dj
+2026-01-23 12:36:38,329 - Action-YouTubeAction - INFO - Found YouTube Video: _IK18goX4X8 in 'Ralph Wiggum Matt Pocock...'
+2026-01-23 12:36:38,329 - Action-YouTubeAction - WARNING -   No transcript found for _IK18goX4X8
+2026-01-23 12:36:38,331 - Automator-scott - INFO - --- Running Action: ingest_wisdom (ingest_to_knowledge_base) ---
+2026-01-23 12:36:38,355 - KnowledgeBase - INFO - Connected to Knowledge Base at C:\Users\scott\ebay-automation\data\knowledge_base
+2026-01-23 12:36:38,812 - KnowledgeBase - INFO - Ingested 1 items into Knowledge Base.
+2026-01-23 12:36:38,813 - Action-IngestAction - INFO - Ingested 1 new entries.
+2026-01-23 12:36:38,814 - Orchestrator - INFO - Orchestration complete.
+2026-01-23 12:57:48,510 - Orchestrator - INFO - Loading configuration from C:\Users\scott\ebay-automation\rules\scott_config.yaml
+2026-01-23 12:57:48,515 - Orchestrator - INFO - --- DRY RUN MODE ENABLED (No changes will be made) ---
+2026-01-23 12:57:48,516 - Orchestrator - INFO - Initializing profile: scott_organizer
+2026-01-23 12:57:48,601 - Automator-scott - INFO - Connected to 'Scott' (278 items)
+2026-01-23 12:57:48,602 - Automator-scott - INFO - Starting automation for profile: scott_organizer
+2026-01-23 12:57:48,602 - Automator-scott - INFO - --- Running Action: trend_scout (discover_new_keywords) ---
+2026-01-23 12:57:48,604 - Action-DiscoveryAction - INFO - Loaded 138 known keywords to ignore.
+2026-01-23 12:57:49,127 - Action-DiscoveryAction - INFO - Analyzing 100 emails for novel terms...
+2026-01-23 12:57:49,131 - Action-DiscoveryAction - INFO - 
+--- EMERGING KEYWORDS REPORT (Dry Run) ---
+2026-01-23 12:57:49,132 - Action-DiscoveryAction - INFO -   post: 93
+2026-01-23 12:57:49,132 - Action-DiscoveryAction - INFO -   httpseatwimgcomemailself_servemediaspacerpng: 90
+2026-01-23 12:57:49,132 - Action-DiscoveryAction - INFO -   httpseatwimgcomemailself_servemedialogo_twitter1497383721365png: 90
+2026-01-23 12:57:49,132 - Action-DiscoveryAction - INFO -   httpseatwimgcomself_servemediaspacer_464x11582829598167png: 90
+2026-01-23 12:57:49,132 - Action-DiscoveryAction - INFO -   httpsxcompurzbeatss43: 24
+2026-01-23 12:57:49,132 - Action-DiscoveryAction - INFO -   purzai: 16
+2026-01-23 12:57:49,132 - Action-DiscoveryAction - INFO -   httpsxcomcomfyuis43: 15
+2026-01-23 12:57:49,132 - Action-DiscoveryAction - INFO -   models: 15
+2026-01-23 12:57:49,132 - Action-DiscoveryAction - INFO -   httpsxcomkatedeynekas43: 15
+2026-01-23 12:57:49,132 - Action-DiscoveryAction - INFO -   code: 13
+2026-01-23 12:57:49,132 - Action-DiscoveryAction - INFO -   model: 12
+2026-01-23 12:57:49,132 - Action-DiscoveryAction - INFO -   httpsxcomskbulouss43: 12
+2026-01-23 12:57:49,132 - Action-DiscoveryAction - INFO -   into: 10
+2026-01-23 12:57:49,132 - Action-DiscoveryAction - INFO -   kate: 10
+2026-01-23 12:57:49,132 - Action-DiscoveryAction - INFO -   deyneka: 10
+2026-01-23 12:57:49,133 - Action-DiscoveryAction - INFO -   link: 9
+2026-01-23 12:57:49,133 - Action-DiscoveryAction - INFO -   purzbeats: 8
+2026-01-23 12:57:49,133 - Action-DiscoveryAction - INFO -   image: 8
+2026-01-23 12:57:49,133 - Action-DiscoveryAction - INFO -   here: 7
+2026-01-23 12:57:49,133 - Action-DiscoveryAction - INFO -   released: 7
+2026-01-23 12:57:49,133 - Action-DiscoveryAction - INFO -   voice: 7
+2026-01-23 12:57:49,133 - Action-DiscoveryAction - INFO -   flow: 7
+2026-01-23 12:57:49,133 - Action-DiscoveryAction - INFO -   update: 6
+2026-01-23 12:57:49,133 - Action-DiscoveryAction - INFO -   httpsxcomjoesparkss43: 6
+2026-01-23 12:57:49,133 - Action-DiscoveryAction - INFO -   httpsxcommachinedelusions43: 6
+2026-01-23 12:57:49,133 - Action-DiscoveryAction - INFO -   single: 6
+2026-01-23 12:57:49,133 - Action-DiscoveryAction - INFO -   httpsxcomalibaba_qwens43: 6
+2026-01-23 12:57:49,133 - Action-DiscoveryAction - INFO -   leonardoai: 6
+2026-01-23 12:57:49,133 - Action-DiscoveryAction - INFO -   httpsxcomleonardoais43: 6
+2026-01-23 12:57:49,133 - Action-DiscoveryAction - INFO -   httpsxcomjerrod_lews43: 6
+2026-01-23 12:57:49,133 - Action-DiscoveryAction - INFO -   httpsxcomyawarnihals43: 6
+2026-01-23 12:57:49,133 - Action-DiscoveryAction - INFO -   httpsxcomhaochenshi74s43: 6
+2026-01-23 12:57:49,133 - Action-DiscoveryAction - INFO -   httpsxcomdevops_nks43: 6
+2026-01-23 12:57:49,133 - Action-DiscoveryAction - INFO -   good: 5
+2026-01-23 12:57:49,133 - Action-DiscoveryAction - INFO -   only: 5
+2026-01-23 12:57:49,134 - Action-DiscoveryAction - INFO -   machine: 5
+2026-01-23 12:57:49,134 - Action-DiscoveryAction - INFO -   open: 5
+2026-01-23 12:57:49,134 - Action-DiscoveryAction - INFO -   every: 5
+2026-01-23 12:57:49,134 - Action-DiscoveryAction - INFO -   been: 5
+2026-01-23 12:57:49,134 - Action-DiscoveryAction - INFO -   also: 5
+2026-01-23 12:57:49,134 - Action-DiscoveryAction - INFO -   prompts: 5
+2026-01-23 12:57:49,134 - Action-DiscoveryAction - INFO -   opensourced: 5
+2026-01-23 12:57:49,134 - Action-DiscoveryAction - INFO -   were: 5
+2026-01-23 12:57:49,134 - Action-DiscoveryAction - INFO -   vllm: 5
+2026-01-23 12:57:49,134 - Action-DiscoveryAction - INFO -   studio: 5
+2026-01-23 12:57:49,134 - Action-DiscoveryAction - INFO -   realtime: 5
+2026-01-23 12:57:49,134 - Action-DiscoveryAction - INFO -   katedeyneka: 5
+2026-01-23 12:57:49,134 - Action-DiscoveryAction - INFO -   httpsxcompurzbeatsstatus2013879533691174954s43txsz5qiypm0khday1kd4jiw: 4
+2026-01-23 12:57:49,134 - Action-DiscoveryAction - INFO -   going: 4
+2026-01-23 12:57:49,134 - Action-DiscoveryAction - INFO -   kjnodes: 4
+2026-01-23 12:57:49,134 - Action-DiscoveryAction - INFO -   httpseatwimgcomemailself_servemedialogo_twitter1497383721365png httpseatwimgcomself_servemediaspacer_464x11582829598167png: 90
+2026-01-23 12:57:49,134 - Action-DiscoveryAction - INFO -   kate deyneka: 10
+2026-01-23 12:57:49,134 - Action-DiscoveryAction - INFO -   httpsxcompurzbeatss43 httpseatwimgcomemailself_servemediaspacerpng: 8
+2026-01-23 12:57:49,135 - Action-DiscoveryAction - INFO -   httpseatwimgcomemailself_servemediaspacerpng purzai: 8
+2026-01-23 12:57:49,135 - Action-DiscoveryAction - INFO -   purzai httpsxcompurzbeatss43: 8
+2026-01-23 12:57:49,135 - Action-DiscoveryAction - INFO -   httpsxcompurzbeatss43 purzbeats: 8
+2026-01-23 12:57:49,135 - Action-DiscoveryAction - INFO -   purzbeats httpsxcompurzbeatss43: 8
+2026-01-23 12:57:49,135 - Action-DiscoveryAction - INFO -   httpsxcompurzbeatss43 httpseatwimgcomemailself_servemedialogo_twitter1497383721365png: 8
+2026-01-23 12:57:49,135 - Action-DiscoveryAction - INFO -   httpsxcomcomfyuis43 httpseatwimgcomemailself_servemediaspacerpng: 5
+2026-01-23 12:57:49,135 - Action-DiscoveryAction - INFO -   httpseatwimgcomemailself_servemediaspacerpng comfyui: 5
+2026-01-23 12:57:49,135 - Action-DiscoveryAction - INFO -   httpsxcomcomfyuis43 comfyui: 5
+2026-01-23 12:57:49,135 - Action-DiscoveryAction - INFO -   httpsxcomcomfyuis43 httpseatwimgcomemailself_servemedialogo_twitter1497383721365png: 5
+2026-01-23 12:57:49,135 - Action-DiscoveryAction - INFO -   httpsxcomkatedeynekas43 httpseatwimgcomemailself_servemediaspacerpng: 5
+2026-01-23 12:57:49,135 - Action-DiscoveryAction - INFO -   httpseatwimgcomemailself_servemediaspacerpng kate: 5
+2026-01-23 12:57:49,135 - Action-DiscoveryAction - INFO -   deyneka httpsxcomkatedeynekas43: 5
+2026-01-23 12:57:49,135 - Action-DiscoveryAction - INFO -   httpsxcomkatedeynekas43 katedeyneka: 5
+2026-01-23 12:57:49,135 - Action-DiscoveryAction - INFO -   katedeyneka httpsxcomkatedeynekas43: 5
+2026-01-23 12:57:49,135 - Action-DiscoveryAction - INFO -   httpsxcomkatedeynekas43 httpseatwimgcomemailself_servemedialogo_twitter1497383721365png: 5
+2026-01-23 12:57:49,135 - Action-DiscoveryAction - INFO -   machine delusions: 4
+2026-01-23 12:57:49,135 - Action-DiscoveryAction - INFO -   comfy cloud: 4
+2026-01-23 12:57:49,137 - Automator-scott - INFO - --- Running Action: youtube_brain (process_youtube_videos) ---
+2026-01-23 12:57:49,788 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2026-01-23 12:57:49,874 - KnowledgeBase - INFO - Connected to Knowledge Base at C:\Users\scott\ebay-automation\data\knowledge_base
+2026-01-23 12:57:50,115 - Action-YouTubeAction - INFO - Found YouTube Video: EbY30K in 'Post by Yawar Siddiqui on X...'
+2026-01-23 12:57:50,443 - Action-YouTubeAction - WARNING -   Transcript API Error for EbY30K: 
+Could not retrieve a transcript for the video https://www.youtube.com/watch?v=EbY30K! This is most likely caused by:
+
+The video is no longer available
+
+If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at https://github.com/jdepoix/youtube-transcript-api/issues. Please add which version of youtube_transcript_api you are using and provide the information needed to replicate the error. Also make sure that there are no open issues which already describe your problem!
+2026-01-23 12:57:50,444 - Action-YouTubeAction - WARNING -   No transcript found for EbY30K. Flagging item.
+2026-01-23 12:57:51,978 - Action-YouTubeAction - WARNING -   Transcript API Error for 5YBjll: 
+Could not retrieve a transcript for the video https://www.youtube.com/watch?v=5YBjll! This is most likely caused by:
+
+The video is no longer available
+
+If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at https://github.com/jdepoix/youtube-transcript-api/issues. Please add which version of youtube_transcript_api you are using and provide the information needed to replicate the error. Also make sure that there are no open issues which already describe your problem!
+2026-01-23 12:57:51,979 - Action-YouTubeAction - WARNING -   No transcript found for 5YBjll. Flagging item.
+2026-01-23 12:57:52,024 - Action-YouTubeAction - INFO - Found YouTube Video: Xtd4Dj in 'Post by Remotion on X...'
+2026-01-23 12:57:52,354 - Action-YouTubeAction - WARNING -   Transcript API Error for Xtd4Dj: 
+Could not retrieve a transcript for the video https://www.youtube.com/watch?v=Xtd4Dj! This is most likely caused by:
+
+The video is no longer available
+
+If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at https://github.com/jdepoix/youtube-transcript-api/issues. Please add which version of youtube_transcript_api you are using and provide the information needed to replicate the error. Also make sure that there are no open issues which already describe your problem!
+2026-01-23 12:57:52,355 - Action-YouTubeAction - WARNING -   No transcript found for Xtd4Dj. Flagging item.
+2026-01-23 12:57:52,399 - Action-YouTubeAction - INFO - Found YouTube Video: _IK18goX4X8 in 'Ralph Wiggum Matt Pocock...'
+2026-01-23 12:57:53,501 - Action-YouTubeAction - INFO -   [DRY RUN] Would send 18840 chars to Ollama (qwen2.5:32b)
+2026-01-23 12:57:53,512 - Action-YouTubeAction - INFO -   [DRY RUN] Would ingest summary for _IK18goX4X8
+2026-01-23 12:57:53,514 - Automator-scott - INFO - --- Running Action: ingest_wisdom (ingest_to_knowledge_base) ---
+2026-01-23 12:57:53,534 - KnowledgeBase - INFO - Connected to Knowledge Base at C:\Users\scott\ebay-automation\data\knowledge_base
+2026-01-23 12:57:53,589 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Purz.ai on X (Tags: ['ComfyUI-Workflows', 'Social-Feed'])
+2026-01-23 12:57:53,606 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by ComfyUI on X (Tags: ['ComfyUI-Workflows', 'Social-Feed'])
+2026-01-23 12:57:53,615 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Pietro Schirano on X (Tags: ['Social-Feed'])
+2026-01-23 12:57:53,632 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Adithya S K on X (Tags: ['Social-Feed'])
+2026-01-23 12:57:53,638 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Ben Williams on X (Tags: ['Social-Feed'])
+2026-01-23 12:57:53,649 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by TechHalla on X (Tags: ['Social-Feed'])
+2026-01-23 12:57:53,661 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Qwen on X (Tags: ['Social-Feed'])
+2026-01-23 12:57:53,668 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Junyang Lin on X (Tags: ['Social-Feed'])
+2026-01-23 12:57:53,674 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Zed on X (Tags: ['Social-Feed'])
+2026-01-23 12:57:53,682 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by 0xSero on X (Tags: ['Social-Feed'])
+2026-01-23 12:57:53,688 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by vLLM on X (Tags: ['Social-Feed'])
+2026-01-23 12:57:53,696 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by huihui.ai on X (Tags: ['Social-Feed'])
+2026-01-23 12:57:53,706 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Greg Kamradt on X (Tags: ['Social-Feed'])
+2026-01-23 12:57:53,723 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Leonardo.Ai on X (Tags: ['Social-Feed'])
+2026-01-23 12:57:53,744 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Matt Pocock on X (Tags: ['Social-Feed'])
+2026-01-23 12:57:53,752 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Jafar Najafov on X (Tags: ['Social-Feed'])
+2026-01-23 12:57:53,769 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Nguyen Le on X (Tags: ['Social-Feed'])
+2026-01-23 12:57:53,775 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Simon Willison on X (Tags: ['Social-Feed'])
+2026-01-23 12:57:53,783 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Prince Canuma on X (Tags: ['Social-Feed'])
+2026-01-23 12:57:53,789 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by MayorkingAI on X (Tags: ['Social-Feed'])
+2026-01-23 12:57:53,796 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Linum on X (Tags: ['Social-Feed'])
+2026-01-23 12:57:53,810 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Blendi on X (Tags: ['Social-Feed'])
+2026-01-23 12:57:53,822 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Lior Alexander on X (Tags: ['Social-Feed'])
+2026-01-23 12:57:53,830 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by Yawar Siddiqui on X (Tags: ['Social-Feed'])
+2026-01-23 12:57:53,847 - Action-IngestAction - INFO - [DRY RUN] Would ingest: Post by ComfyUI on X (Tags: ['ComfyUI-Workflows', 'Social-Feed'])
+2026-01-23 12:57:53,848 - Action-IngestAction - INFO - [DRY RUN] Would have ingested 28 entries.
+2026-01-23 12:57:53,849 - Automator-scott - INFO - --- Running Action: organize_keywords (move_based_on_keywords) ---
+2026-01-23 12:57:53,865 - Automator-scott - ERROR - Error executing action class 'MoveAction': expected an indented block after 'else' statement on line 71 (move_action.py, line 72)
+Traceback (most recent call last):
+  File "C:\Users\scott\ebay-automation\actions\folder_automator.py", line 88, in _dispatch_action
+    module = __import__(module_path, fromlist=[class_name])
+  File "C:\Users\scott\ebay-automation\actions\move_action.py", line 72
+    else:
+    ^^^^
+IndentationError: expected an indented block after 'else' statement on line 71
+2026-01-23 12:57:53,865 - Orchestrator - INFO - Orchestration complete.
+2026-01-23 12:58:26,256 - Orchestrator - INFO - Loading configuration from C:\Users\scott\ebay-automation\rules\scott_config.yaml
+2026-01-23 12:58:26,265 - Orchestrator - INFO - Initializing profile: scott_organizer
+2026-01-23 12:58:26,454 - Automator-scott - INFO - Connected to 'Scott' (278 items)
+2026-01-23 12:58:26,454 - Automator-scott - INFO - Starting automation for profile: scott_organizer
+2026-01-23 12:58:26,454 - Automator-scott - INFO - --- Running Action: trend_scout (discover_new_keywords) ---
+2026-01-23 12:58:26,456 - Action-DiscoveryAction - INFO - Loaded 138 known keywords to ignore.
+2026-01-23 12:58:27,419 - Action-DiscoveryAction - INFO - Analyzing 100 emails for novel terms...
+2026-01-23 12:58:27,425 - Action-DiscoveryAction - INFO - Written discovery report to emerging_keywords.txt
+2026-01-23 12:58:27,427 - Automator-scott - INFO - --- Running Action: youtube_brain (process_youtube_videos) ---
+2026-01-23 12:58:28,447 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2026-01-23 12:58:28,731 - KnowledgeBase - INFO - Connected to Knowledge Base at C:\Users\scott\ebay-automation\data\knowledge_base
+2026-01-23 12:58:29,137 - Action-YouTubeAction - INFO - Found YouTube Video: EbY30K in 'Post by Yawar Siddiqui on X...'
+2026-01-23 12:58:29,598 - Action-YouTubeAction - WARNING -   Transcript API Error for EbY30K: 
+Could not retrieve a transcript for the video https://www.youtube.com/watch?v=EbY30K! This is most likely caused by:
+
+The video is no longer available
+
+If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at https://github.com/jdepoix/youtube-transcript-api/issues. Please add which version of youtube_transcript_api you are using and provide the information needed to replicate the error. Also make sure that there are no open issues which already describe your problem!
+2026-01-23 12:58:29,599 - Action-YouTubeAction - WARNING -   No transcript found for EbY30K. Flagging item.
+2026-01-23 12:58:29,617 - Action-YouTubeAction - INFO -   Item flagged as 'YouTube-Failed'
+2026-01-23 12:58:32,040 - Action-YouTubeAction - WARNING -   Transcript API Error for 5YBjll: 
+Could not retrieve a transcript for the video https://www.youtube.com/watch?v=5YBjll! This is most likely caused by:
+
+The video is no longer available
+
+If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at https://github.com/jdepoix/youtube-transcript-api/issues. Please add which version of youtube_transcript_api you are using and provide the information needed to replicate the error. Also make sure that there are no open issues which already describe your problem!
+2026-01-23 12:58:32,042 - Action-YouTubeAction - WARNING -   No transcript found for 5YBjll. Flagging item.
+2026-01-23 12:58:32,048 - Action-YouTubeAction - INFO -   Item flagged as 'YouTube-Failed'
+2026-01-23 12:58:32,106 - Action-YouTubeAction - INFO - Found YouTube Video: Xtd4Dj in 'Post by Remotion on X...'
+2026-01-23 12:58:32,519 - Action-YouTubeAction - WARNING -   Transcript API Error for Xtd4Dj: 
+Could not retrieve a transcript for the video https://www.youtube.com/watch?v=Xtd4Dj! This is most likely caused by:
+
+The video is no longer available
+
+If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at https://github.com/jdepoix/youtube-transcript-api/issues. Please add which version of youtube_transcript_api you are using and provide the information needed to replicate the error. Also make sure that there are no open issues which already describe your problem!
+2026-01-23 12:58:32,520 - Action-YouTubeAction - WARNING -   No transcript found for Xtd4Dj. Flagging item.
+2026-01-23 12:58:32,526 - Action-YouTubeAction - INFO -   Item flagged as 'YouTube-Failed'
+2026-01-23 12:58:32,610 - Action-YouTubeAction - INFO - Found YouTube Video: _IK18goX4X8 in 'Ralph Wiggum Matt Pocock...'
+2026-01-23 12:58:34,001 - Action-YouTubeAction - INFO -   Sending to Ollama (qwen2.5:32b)...
+2026-01-23 12:58:34,001 - Action-YouTubeAction - INFO -   Transcript length: 18840 chars. Split into 4 chunks.
+2026-01-23 12:58:34,001 - Action-YouTubeAction - INFO -   Summarizing chunk 1/4...
+2026-01-23 12:58:57,006 - Action-YouTubeAction - INFO -   Summarizing chunk 2/4...
+2026-01-23 12:59:19,945 - Action-YouTubeAction - INFO -   Summarizing chunk 3/4...
+2026-01-23 12:59:35,034 - Action-YouTubeAction - INFO -   Summarizing chunk 4/4...
+2026-01-23 12:59:45,594 - Action-YouTubeAction - INFO -   Generating Final Report from 3151 chars of notes...
+2026-01-23 13:00:15,113 - KnowledgeBase - INFO - Ingested 1 items into Knowledge Base.
+2026-01-23 13:00:15,114 - Action-YouTubeAction - INFO -   Ingested summary for _IK18goX4X8
+2026-01-23 13:00:15,116 - Automator-scott - INFO - --- Running Action: ingest_wisdom (ingest_to_knowledge_base) ---
+2026-01-23 13:00:15,140 - KnowledgeBase - INFO - Connected to Knowledge Base at C:\Users\scott\ebay-automation\data\knowledge_base
+2026-01-23 13:00:16,249 - KnowledgeBase - INFO - Ingested 28 items into Knowledge Base.
+2026-01-23 13:00:16,249 - Action-IngestAction - INFO - Ingested 28 new entries.
+2026-01-23 13:00:16,252 - Automator-scott - INFO - --- Running Action: organize_keywords (move_based_on_keywords) ---
+2026-01-23 13:00:16,257 - Automator-scott - ERROR - Error executing action class 'MoveAction': expected an indented block after 'else' statement on line 71 (move_action.py, line 72)
+Traceback (most recent call last):
+  File "C:\Users\scott\ebay-automation\actions\folder_automator.py", line 88, in _dispatch_action
+    module = __import__(module_path, fromlist=[class_name])
+  File "C:\Users\scott\ebay-automation\actions\move_action.py", line 72
+    else:
+    ^^^^
+IndentationError: expected an indented block after 'else' statement on line 71
+2026-01-23 13:00:16,258 - Orchestrator - INFO - Orchestration complete.

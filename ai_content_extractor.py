@@ -53,6 +53,20 @@ PATTERNS = {
 }
 
 # =============================================================================
+# METRIC PATTERNS
+# =============================================================================
+
+METRIC_PATTERNS = {
+    'views': re.compile(r'([\d\.,]+[KMB]?\+?)\s+Views?', re.IGNORECASE),
+    'likes': re.compile(r'([\d\.,]+[KMB]?\+?)\s+Likes?', re.IGNORECASE),
+    'reposts': re.compile(r'([\d\.,]+[KMB]?\+?)\s+Reposts?', re.IGNORECASE),
+    'retweets': re.compile(r'([\d\.,]+[KMB]?\+?)\s+Retweets?', re.IGNORECASE),
+    'saves': re.compile(r'([\d\.,]+[KMB]?\+?)\s+Bookmarl?s?|([\d\.,]+[KMB]?\+?)\s+Saves?', re.IGNORECASE),
+    'impressions': re.compile(r'([\d\.,]+[KMB]?\+?)\s+Impressions?', re.IGNORECASE),
+}
+
+
+# =============================================================================
 # MODEL DETECTION KEYWORDS
 # =============================================================================
 
@@ -183,6 +197,94 @@ def expand_all_tco_urls(text, verbose=False):
 
     return expanded
 
+    return expanded
+
+def parse_metric_value(value_str):
+    """
+    Parse metric strings like '1.2K', '1M', '500' into integers.
+    """
+    if not value_str:
+        return 0
+    
+    value_str = value_str.upper().replace(',', '').replace('+', '').strip()
+    multiplier = 1
+    
+    if value_str.endswith('K'):
+        multiplier = 1000
+        value_str = value_str[:-1]
+    elif value_str.endswith('M'):
+        multiplier = 1000000
+        value_str = value_str[:-1]
+    elif value_str.endswith('B'):
+        multiplier = 1000000000
+        value_str = value_str[:-1]
+        
+    try:
+        return int(float(value_str) * multiplier)
+    except:
+        return 0
+
+def extract_metrics(text):
+    """
+    Extract engagement metrics and calculate impact score.
+    """
+    metrics = {
+        'views': 0,
+        'likes': 0,
+        'reposts': 0,
+        'saves': 0
+    }
+    
+    # Views/Impressions
+    for match in METRIC_PATTERNS['views'].finditer(text):
+        metrics['views'] = max(metrics['views'], parse_metric_value(match.group(1)))
+    for match in METRIC_PATTERNS['impressions'].finditer(text):
+        metrics['views'] = max(metrics['views'], parse_metric_value(match.group(1)))
+        
+    # Likes
+    for match in METRIC_PATTERNS['likes'].finditer(text):
+        metrics['likes'] = max(metrics['likes'], parse_metric_value(match.group(1)))
+        
+    # Reposts/Retweets
+    for match in METRIC_PATTERNS['reposts'].finditer(text):
+        metrics['reposts'] = max(metrics['reposts'], parse_metric_value(match.group(1)))
+    for match in METRIC_PATTERNS['retweets'].finditer(text):
+        metrics['reposts'] = max(metrics['reposts'], parse_metric_value(match.group(1)))
+        
+    # Saves/Bookmarks
+    for match in METRIC_PATTERNS['saves'].finditer(text):
+        val = match.group(1) or match.group(2)
+        metrics['saves'] = max(metrics['saves'], parse_metric_value(val))
+        
+    # Calculate Impact Score
+    # Formula: Views/1000 + Likes + Reposts*2 + Saves*2
+    impact_score = (
+        (metrics['views'] / 1000) + 
+        metrics['likes'] + 
+        (metrics['reposts'] * 2) + 
+        (metrics['saves'] * 2)
+    )
+    
+    # Baseline variability based on text keywords (if metrics are 0 or low)
+    # This helps surface "obviously important" items even without explicit stats
+    text_lower = text.lower()
+    if 'viral' in text_lower or 'breaking' in text_lower: impact_score += 5
+    if 'huge' in text_lower or 'incredible' in text_lower: impact_score += 3
+    if 'tutorial' in text_lower or 'guide' in text_lower: impact_score += 2
+    if 'release' in text_lower or 'launch' in text_lower: impact_score += 4
+
+    
+    # Baseline variability based on text keywords (if metrics are 0 or low)
+    # This helps surface "obviously important" items even without explicit stats
+    text_lower = text.lower()
+    if 'viral' in text_lower or 'breaking' in text_lower: impact_score += 5
+    if 'huge' in text_lower or 'incredible' in text_lower: impact_score += 3
+    if 'tutorial' in text_lower or 'guide' in text_lower: impact_score += 2
+    if 'release' in text_lower or 'launch' in text_lower: impact_score += 4
+
+    
+    return metrics, int(impact_score)
+
 # =============================================================================
 # EXTRACTION FUNCTIONS
 # =============================================================================
@@ -206,10 +308,16 @@ def extract_github_repos(text):
         owner, repo = match.groups()[:2]
         # Clean up repo name
         repo = clean_url_ending(repo)
-        # Skip user profiles, status pages, truncated URLs
-        if repo and not repo.startswith('status') and len(repo) > 2:
-            full_url = f"github.com/{owner}/{repo}"
-            if full_url not in seen:
+        
+        if not repo or len(repo) < 3:
+            continue
+
+        # Skip user profiles, status pages
+        if repo.startswith('status'):
+            continue
+            
+        full_url = f"github.com/{owner}/{repo}"
+        if full_url not in seen:
                 seen.add(full_url)
                 repos.append({
                     'url': full_url,
@@ -273,36 +381,41 @@ def extract_huggingface_refs(text):
     return refs
 
 def extract_youtube_urls(text):
-    """Extract YouTube video URLs."""
+    """
+    Extract YouTube URLs and attempt to find titles in surrounding text.
+    """
     videos = []
+    
+    # Simple line-based title extraction
+    lines = text.split('\n')
+    for i, line in enumerate(lines):
+        found_in_line = []
+        # Full URLs
+        for match in PATTERNS['youtube_full'].finditer(line):
+            found_in_line.append({'id': match.group(1), 'url': f"https://www.youtube.com/watch?v={match.group(1)}"})
+        # Short URLs
+        for match in PATTERNS['youtube_short'].finditer(line):
+            found_in_line.append({'id': match.group(1), 'url': f"https://youtu.be/{match.group(1)}"})
+            
+        for v in found_in_line:
+            # Try to get title from same line
+            title = line.replace(v['url'], '').strip()
+            # Or previous line if current is just URL
+            if len(title) < 5 and i > 0:
+                prev = lines[i-1].strip()
+                if len(prev) > 10: title = prev
+            
+            title = title.strip(' -:[]()') or "Unknown Title"
+            
+            videos.append({
+                'video_id': v['id'],
+                'url': v['url'],
+                'title': title,
+                'date_found': datetime.now().strftime('%Y-%m-%d')
+            })
+            
+    return videos
 
-    # Full YouTube URLs
-    for match in PATTERNS['youtube_full'].finditer(text):
-        video_id = match.group(1)
-        videos.append({
-            'video_id': video_id,
-            'url': f"youtube.com/watch?v={video_id}",
-            'date_found': datetime.now().strftime('%Y-%m-%d')
-        })
-
-    # Short YouTube URLs
-    for match in PATTERNS['youtube_short'].finditer(text):
-        video_id = match.group(1)
-        videos.append({
-            'video_id': video_id,
-            'url': f"youtu.be/{video_id}",
-            'date_found': datetime.now().strftime('%Y-%m-%d')
-        })
-
-    # Dedupe by video_id
-    seen = set()
-    unique = []
-    for v in videos:
-        if v['video_id'] not in seen:
-            seen.add(v['video_id'])
-            unique.append(v)
-
-    return unique
 
 def extract_style_codes(text):
     """Extract Midjourney --sref and --style codes."""
@@ -400,6 +513,15 @@ def extract_all_from_text(text, source_info=None, expand_tco=False, verbose=Fals
         if v['video_id'] not in seen_yt:
             seen_yt.add(v['video_id'])
             unique_yt.append(v)
+
+    
+    # Extract metrics
+    metrics, impact_score = extract_metrics(text)
+    
+    # Enrich source info if provided
+    if source_info:
+        source_info['metrics'] = metrics
+        source_info['impact_score'] = impact_score
 
     result = {
         'github_repos': unique_github,
@@ -574,14 +696,76 @@ def process_subfolder(subfolder, db):
             body = item.Body or ''
             text = f"{subject} {body}"
 
+            try:
+                sender = item.SenderName or 'Unknown Sender'
+                # Clean sender name (remove email address if present)
+                if ' <' in sender:
+                    sender = sender.split(' <')[0].strip()
+            except:
+                sender = 'Unknown Sender'
+
+            # Try to extract original author from email body (for forwarded emails)
+            original_author = None
+            import re
+            
+            # Common patterns for original author in forwarded X/Twitter posts
+            author_patterns = [
+                r'Post by ([^<>\n]+?) on X',      # "Post by Author on X"
+                r'Posted by ([^<>\n]+)',           # "Posted by Author"
+                r'From: ([^<>\n]+)',               # "From: Author"
+                r'Author: ([^<>\n]+)',             # "Author: Name"
+                r'By ([^<>\n]+?) \|',              # "By Author |" (newsletter style)
+                r'Written by ([^<>\n]+)',          # "Written by Author"
+                r'\n([A-Z][a-z]+ [A-Z][a-z]+)\n.*@',  # Name followed by @ on next line
+                r'(?:^|\n)([A-Z][a-z]+ [A-Z][a-z]+) shared',  # "Name shared"
+                r'@([A-Za-z0-9_]{3,20})',          # Twitter handle @username (3-20 chars)
+            ]
+            
+            for pattern in author_patterns:
+                match = re.search(pattern, body)
+                if match:
+                    original_author = match.group(1).strip()
+                    # Clean up extracted author
+                    original_author = original_author.strip(' -:')
+                    if len(original_author) > 2 and len(original_author) < 50:
+                        break
+                    else:
+                        original_author = None
+            
+            # Use original author if found, otherwise fall back to sender
+            author = original_author if original_author else sender
+
             source_info = {
                 'type': 'outlook_email',
                 'folder': subfolder_name,
                 'subject': subject[:100],
+                'author': author,
                 'date': str(item.ReceivedTime)[:10]
             }
 
-            extractions = extract_all_from_text(text, source_info)
+
+            # Enable t.co expansion to recover full URLs
+            extractions = extract_all_from_text(text, source_info, expand_tco=True)
+
+            # Smart Deduplication: Remove truncated GitHub URLs if a full version exists
+            def is_truncated_version(trunc, full):
+                return trunc.endswith('...') and full.startswith(trunc.rstrip('...'))
+
+            full_repos = [r['url'] for r in extractions['github_repos'] if not r['url'].endswith('...')]
+            
+            unique_repos = []
+            for repo in extractions['github_repos']:
+                is_redundant = False
+                if repo['url'].endswith('...'):
+                    for full in full_repos:
+                        if is_truncated_version(repo['url'], full):
+                            is_redundant = True
+                            break
+                if not is_redundant:
+                    unique_repos.append(repo)
+            
+            extractions['github_repos'] = unique_repos
+
 
             # Track what was found (before dedup)
             stats['github'] += len(extractions['github_repos'])

@@ -1,0 +1,138 @@
+global:
+  app_name: "UnclesVF Orchestrator (Scott Main)"
+  log_level: "INFO"
+  dry_run: false
+
+profiles:
+  - id: "scott_organizer"
+    active: true
+    account: "scott@unclesvf.com"
+    source_folder: "scott"
+
+    actions:
+      # --- Action 0: Discovery (Intelligence) ---
+      - name: "trend_scout"
+        type: "discover_new_keywords"
+        params:
+          limit: 100
+          min_occurrence: 3
+          report_file: "emerging_keywords.txt"
+
+      # --- Action 0.5: YouTube Analyst (Local LLM) ---
+      - name: "youtube_brain"
+        type: "process_youtube_videos"
+        params:
+          limit: 5
+          model: "qwen2.5:32b"
+          ollama_url: "http://localhost:11434/api/generate"
+
+      # --- Action 1: Ingest Wisdom (Knowledge Base) ---
+      - name: "ingest_wisdom"
+        type: "ingest_to_knowledge_base"
+        params:
+          limit: 50 # Start small for testing
+          min_body_length: 100
+          required_keywords: ["tutorial", "guide", "how-to", "workflow", "process", "lesson", "code", "model", "prompt", "llm", "api", "reddit", "discord", "huggingface", "github", "civitai", "substack"]
+          project_tags:
+            "Uncles Value Farm": ["value farm", "uncle's"]
+            "Ask the Old People": ["ask the old", "elder"]
+            "ComfyUI-Workflows": ["comfyui", "nodes", "json"]
+            "Social-Feed": ["code", "model", "prompt", "llm", "api", "reddit", "discord", "huggingface", "github", "civitai", "substack"]
+
+      # --- Action 2: Organize Emails ---
+      - name: "organize_keywords"
+        type: "move_based_on_keywords"
+        params:
+          default_folder: "Other-Misc"
+          limit: 200
+          create_missing_folders: false
+          exclude_categories: ["YouTube-Failed"]
+          rules:
+            # --- New AI Categories ---
+            "AI-ComfyUI": ["comfyui", "comfui", "nodes", "workflow"]
+            "AI-Video-Gen":
+              ["video gen", "sora", "runway", "pika", "text-to-video"]
+            "AI-Lip-Sync":
+              ["lip sync", "lyp sinc", "wav2lip", "sync labs", "sadtalker"]
+
+            # --- Migrated Categories ---
+            "X-Twitter Posts": ["x.com", "twitter.com", "tweet", "@"]
+            "AI Art-Images":
+              [
+                "midjourney",
+                "dalle",
+                "stable diffusion",
+                "image generat",
+                "ai art",
+                "flux",
+                "ideogram",
+              ]
+            "AI Agents": ["ai agent", "autonomous agent", "agent framework"]
+            "AI Music-Audio":
+              ["suno", "udio", "music ai", "audio ai", "voice clone"]
+            "Business Docs":
+              ["invoice", "contract", "agreement", "business plan"]
+            "ChatGPT-OpenAI": ["chatgpt", "openai", "gpt-4", "gpt4", "dall-e"]
+            "Claude-Anthropic":
+              ["claude", "anthropic", "sonnet", "haiku", "opus"]
+            "Coding-Development":
+              [
+                "github",
+                "python",
+                "javascript",
+                "coding",
+                "programming",
+                "developer",
+              ]
+            "Coins-Numismatics":
+              ["coin", "numismatic", "silver", "gold", "bullion", "mint"]
+            "eBay Related": ["ebay", "listing", "auction", "buyer", "seller"]
+            "eBay-Auction Photos":
+              ["auction photo", "ebay photo", "product photo"]
+            "Engraving-Laser":
+              [
+                "laser",
+                "engrav",
+                "xtool",
+                "lightburn",
+                "opa",
+                "fiber laser",
+                "co2 laser",
+                "3d engrav",
+                "coin engrav",
+                "creative space",
+                "mopa",
+              ]
+            "Adobe-Editing":
+              [
+                "lightroom",
+                "photoshop",
+                "firefly",
+                "adobe creative",
+                "adobe cc",
+              ]
+            "HiggsField": ["higgsfield", "nanobanana", "higgs field"]
+            "Grok-xAI": ["grok imagine", "grok image", "grok ai", "xai"]
+            "Fadal": ["fadal", "cnc", "machining"]
+            "General AI":
+              [
+                "artificial intelligence",
+                "machine learning",
+                "llm",
+                "neural",
+                "deep learning",
+              ]
+            "GitHub Projects":
+              ["repository", "pull request", "commit", "github.com"]
+            "Google-Gemini": ["gemini", "google ai", "bard", "google brain"]
+            "History Project": ["history", "historical", "genealogy"]
+            "Medical-Personal": ["medical", "health", "doctor", "prescription"]
+            "Mint Asset Sale": ["mint asset", "asset sale"]
+            "NotebookLM": ["notebooklm", "notebook lm"]
+            "Outlook-Email": ["outlook", "email setup", "mail config"]
+            "Personal-Family": ["family", "personal", "birthday", "holiday"]
+            "Pricing-Plans": ["pricing", "subscription", "plan", "tier"]
+            "Reddit Posts": ["reddit", "r/"]
+            "Software-Apps":
+              ["software", "application", "app", "tool", "utility"]
+            "YouTube Videos": ["youtube", "youtu.be", "video"]

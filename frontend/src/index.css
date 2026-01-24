@@ -1,0 +1,53 @@
+:root {
+  --bg-deep: #0a0a0f;
+  --bg-surface: rgba(255, 255, 255, 0.03);
+  --bg-glass: rgba(255, 255, 255, 0.05);
+
+  --primary-cyan: #ff8a8a; /* Pale red/coral - easier to see */
+  --secondary-purple: #ffd700; /* Bright gold/yellow - easier to see */
+  --accent-green: #0aff60;
+  --accent-red: #ff2a2a;
+
+  --text-main: #ffffff;
+  --text-muted: rgba(255, 255, 255, 0.6);
+
+  --blur-md: 12px;
+  --border-glass: rgba(255, 255, 255, 0.1);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: "Inter", sans-serif;
+  background-color: var(--bg-deep);
+  color: var(--text-main);
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}

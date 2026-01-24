@@ -1,0 +1,32 @@
+global:
+  app_name: "UnclesVF Orchestrator (Safe Test)"
+  log_level: "INFO"
+  dry_run: false # ACTIVE: Will call LLM and Save to KB
+
+profiles:
+  - id: "scott_test_run"
+    active: true
+    account: "scott@unclesvf.com"
+    source_folder: "scott"
+
+    actions:
+      # --- Action 1: YouTube Analyst (Local LLM) ---
+      - name: "youtube_brain"
+        type: "process_youtube_videos"
+        params:
+          limit: 50 # Process top 50 videos only for test
+          model: "qwen2.5:32b"
+          ollama_url: "http://localhost:11434/api/generate"
+
+      # --- Action 2: Ingest Wisdom ---
+      - name: "ingest_wisdom"
+        type: "ingest_to_knowledge_base"
+        params:
+          limit: 10
+          min_body_length: 100
+          required_keywords: ["tutorial", "guide", "code", "model"]
+          project_tags:
+            "Test-Run": ["test"]
+
+      # --- Action 3: Organization (DISABLED/EMPTY for safety) ---
+      # We omit the move_action entirely so no files are moved during this test.

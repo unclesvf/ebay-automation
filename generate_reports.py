@@ -288,16 +288,92 @@ HTML_HEAD = """<!DOCTYPE html>
         .url-expanded {{
             word-break: break-all;
         }}
+
+        .impact-badge {{
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }}
+
+        .impact-high {{
+            background: #ff4757;
+            color: white;
+        }}
+
+        .impact-medium {{
+            background: #ffa502;
+            color: black;
+        }}
+
+        .metrics-row {{
+            display: flex;
+            gap: 1rem;
+            margin-top: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }}
+
+        .metric {{
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }}
+        .back-to-top {{
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--accent);
+            color: white;
+            padding: 0.75rem;
+            border-radius: 50%;
+            text-decoration: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            display: none;
+            z-index: 100;
+            font-size: 1.2rem;
+        }}
+
+        .back-to-top:hover {{
+            background: var(--accent-hover);
+        }}
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- Persistent Nav -->
+        <nav style="background: var(--bg-card); padding: 1rem; border-radius: 8px; margin-bottom: 2rem; display: flex; gap: 1rem; align-items: center; justify-content: space-between;">
+            <div style="font-weight: bold; font-size: 1.1rem; color: var(--accent);">
+                <a href="universal_insights.html" style="text-decoration: none; color: inherit;">AMBROSE Insights</a>
+            </div>
+            <div style="display: flex; gap: 1rem;">
+                <a href="universal_insights.html" class="tag" style="text-decoration: none;">Dashboard</a>
+                <a href="index.html" class="tag" style="text-decoration: none;">Index</a>
+                <a href="tutorials.html" class="tag" style="text-decoration: none;">Tutorials</a>
+                <a href="tips_by_topic.html" class="tag" style="text-decoration: none;">Tips</a>
+                <a href="tool_mentions.html" class="tag" style="text-decoration: none;">Tools</a>
+            </div>
+        </nav>
 """
 
 HTML_FOOTER = """
+        <a href="#" class="back-to-top" id="backToTop">⬆️</a>
         <footer>
             Generated on {date} | AI Knowledge Base
         </footer>
+        <script>
+            // Back to top capability
+            window.addEventListener('scroll', () => {{
+                const btn = document.getElementById('backToTop');
+                if (window.scrollY > 300) {{
+                    btn.style.display = 'block';
+                }} else {{
+                    btn.style.display = 'none';
+                }}
+            }});
+        </script>
     </div>
 </body>
 </html>
@@ -382,6 +458,9 @@ def ensure_exports_dir():
 
 def make_url(path):
     """Convert a path to a full URL."""
+    if not path:
+        return "#"
+    path = path.strip()
     if path.startswith('http'):
         return path
     return f"https://{path}"
@@ -392,8 +471,8 @@ def format_source(source):
         return "Unknown source"
 
     parts = []
-    if source.get('author'):
-        parts.append(f"<strong>{source['author']}</strong>")
+    author = source.get('author') or source.get('sender') or 'Unknown'
+    parts.append(f"<strong>{author}</strong>")
     if source.get('date'):
         parts.append(source['date'])
     if source.get('type'):
@@ -404,6 +483,208 @@ def format_source(source):
 # =============================================================================
 # REPORT GENERATORS
 # =============================================================================
+
+# =============================================================================
+# REPORT GENERATORS
+# =============================================================================
+
+def generate_universal_insights_report(db):
+    """Generate the 'Universal Insights' dashboard ranking all content by impact."""
+    html = HTML_HEAD.format(title="Universal AI Insights - Dashboard")
+    
+    # Collect all items
+    all_items = []
+    
+    # helper to normalize items
+    def add_items(source_list, type_label, icon_class):
+        for item in source_list:
+            source = item.get('source', {})
+            impact = source.get('impact_score', 0)
+            metrics = source.get('metrics', {})
+            
+            # Boost score for recent items if impact is 0
+            date_found = item.get('date_found', '')
+            is_recent = date_found == datetime.now().strftime('%Y-%m-%d')
+            if impact == 0 and is_recent:
+                impact = 10 # Baseline for new items
+                
+            all_items.append({
+                'title': item.get('name') or item.get('title') or item.get('code') or 'Unknown',
+                'url': item.get('url') or '#',
+                'type': type_label,
+                'icon_class': icon_class,
+                'impact': impact,
+                'metrics': metrics,
+                'date': date_found,
+                'author': source.get('author', 'Unknown'),
+                'source_obj': source
+            })
+
+    # Add from all sources
+    add_items(db['repositories']['github'], 'GitHub Repo', 'github')
+    add_items(db['repositories']['huggingface'], 'HF Model', 'huggingface')
+    add_items(db['tutorials'], 'Tutorial', 'youtube')
+    add_items(db['styles']['midjourney_sref'], 'Style Code', 'sref')
+    
+    # Sort by impact score descending
+    all_items.sort(key=lambda x: x['impact'], reverse=True)
+    
+    # Top 50 items only for the dashboard
+    top_items = all_items[:50]
+    
+    html += """
+        <header>
+            <h1>Universal AI Insights</h1>
+            <p class="subtitle">Unified view of top-tier AI content ranking by impact & engagement</p>
+            <div class="nav-links">
+                <a href="index.html" class="nav-link">Main Index</a>
+                <a href="tutorials.html" class="nav-link">Tutorials</a>
+                <a href="tips_by_topic.html" class="nav-link">Tips</a>
+            </div>
+        </header>
+
+        <section>
+            <h2>🔥 Trending Now (Top 50)</h2>
+            <div class="card-grid">
+    """
+    
+    for item in top_items:
+        impact_class = 'impact-high' if item['impact'] > 50 else 'impact-medium'
+        metrics_html = ""
+        m = item['metrics']
+        if m:
+            parts = []
+            if m.get('views'): parts.append(f"👁️ {m['views']:,}")
+            if m.get('likes'): parts.append(f"❤️ {m['likes']:,}")
+            if m.get('reposts'): parts.append(f"🔁 {m['reposts']:,}")
+            metrics_html = f'<div class="metrics-row">{" ".join(parts)}</div>'
+            
+        html += f"""
+            <div class="card">
+                <div class="impact-badge {impact_class}">Impact Score: {item['impact']}</div>
+                <div class="card-title">
+                    <a href="{make_url(item['url'])}" target="_blank">{item['title']}</a>
+                </div>
+                <div class="card-meta">
+                    <span class="tag {item['icon_class']}">{item['type']}</span>
+                    {item['date']}
+                </div>
+                <div class="card-source">
+                    {f"<div>Repo: <strong>{item['owner']}</strong></div>" if item.get('owner') else ""}
+                    <div>Posted by: {item['author']}</div>
+                </div>
+                {metrics_html}
+            </div>
+        """
+        
+    html += """
+            </div>
+        </section>
+    """
+    
+    html += HTML_FOOTER.format(date=datetime.now().strftime('%Y-%m-%d %H:%M'))
+    return html
+
+# =============================================================================
+# REPORT GENERATORS
+# =============================================================================
+
+def generate_universal_insights_report(db):
+    """Generate the 'Universal Insights' dashboard ranking all content by impact."""
+    html = HTML_HEAD.format(title="Universal AI Insights - Dashboard")
+    
+    # Collect all items
+    all_items = []
+    
+    # helper to normalize items
+    def add_items(source_list, type_label, icon_class):
+        for item in source_list:
+            source = item.get('source', {})
+            impact = source.get('impact_score', 0)
+            metrics = source.get('metrics', {})
+            
+            # Boost score for recent items if impact is 0
+            date_found = item.get('date_found', '')
+            is_recent = date_found == datetime.now().strftime('%Y-%m-%d')
+            if impact == 0 and is_recent:
+                impact = 10 # Baseline for new items
+                
+            all_items.append({
+                'title': item.get('name') or item.get('title') or item.get('code') or 'Unknown',
+                'url': item.get('url') or '#',
+                'type': type_label,
+                'icon_class': icon_class,
+                'impact': impact,
+                'metrics': metrics,
+                'date': date_found,
+                'author': source.get('author', 'Unknown'),
+                'owner': item.get('owner'), # specific for repos
+                'source_obj': source
+            })
+
+    # Add from all sources
+    add_items(db['repositories']['github'], 'GitHub Repo', 'github')
+    add_items(db['repositories']['huggingface'], 'HF Model', 'huggingface')
+    add_items(db['tutorials'], 'Tutorial', 'youtube')
+    add_items(db['styles']['midjourney_sref'], 'Style Code', 'sref')
+    
+    # Sort by impact score descending
+    all_items.sort(key=lambda x: x['impact'], reverse=True)
+    
+    # Top 50 items only for the dashboard
+    top_items = all_items[:50]
+    
+    html += """
+        <header>
+            <h1>Universal AI Insights</h1>
+            <p class="subtitle">Unified view of top-tier AI content ranking by impact & engagement</p>
+            <div class="nav-links">
+                <a href="index.html" class="nav-link">Main Index</a>
+                <a href="tutorials.html" class="nav-link">Tutorials</a>
+                <a href="tips_by_topic.html" class="nav-link">Tips</a>
+            </div>
+        </header>
+
+        <section>
+            <h2>🔥 Trending Now (Top 50)</h2>
+            <div class="card-grid">
+    """
+    
+    for item in top_items:
+        impact_class = 'impact-high' if item['impact'] > 50 else 'impact-medium'
+        metrics_html = ""
+        m = item['metrics']
+        if m:
+            parts = []
+            if m.get('views'): parts.append(f"👁️ {m['views']:,}")
+            if m.get('likes'): parts.append(f"❤️ {m['likes']:,}")
+            if m.get('reposts'): parts.append(f"🔁 {m['reposts']:,}")
+            metrics_html = f'<div class="metrics-row">{" ".join(parts)}</div>'
+            
+        html += f"""
+            <div class="card">
+                <div class="impact-badge {impact_class}">Impact Score: {item['impact']}</div>
+                <div class="card-title">
+                    <a href="{make_url(item['url'])}" target="_blank">{item['title']}</a>
+                </div>
+                <div class="card-meta">
+                    <span class="tag {item['icon_class']}">{item['type']}</span>
+                    {item['date']}
+                </div>
+                <div class="card-source">
+                    Author: <strong>{item['author']}</strong>
+                </div>
+                {metrics_html}
+            </div>
+        """
+        
+    html += """
+            </div>
+        </section>
+    """
+    
+    html += HTML_FOOTER.format(date=datetime.now().strftime('%Y-%m-%d %H:%M'))
+    return html
 
 def generate_index_report(db, url_cache):
     """Generate the main index page."""
@@ -817,13 +1098,29 @@ def generate_tips_by_topic_report(extracted_data):
         tips=len(tips)
     )
 
+    # Quick Access TOC
+    html += """
+        <div class="toc-container" style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
+            <h3 style="margin-bottom: 1rem; color: var(--text-primary);">Quick Access</h3>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+    """
+    for category in sorted(tips_by_category.keys()):
+        count = len(tips_by_category[category])
+        display_name = category.replace('-', ' ').replace('_', ' ').title()
+        html += f'<a href="#{category}" class="tag" style="text-decoration: none; color: var(--text-primary); cursor: pointer;">{display_name} ({count})</a>'
+    
+    html += """
+            </div>
+        </div>
+    """
+
     # Generate category sections
     for category in sorted(tips_by_category.keys()):
         category_tips = tips_by_category[category]
         display_category = category.replace('-', ' ').replace('_', ' ').title()
 
         html += f"""
-        <section>
+        <section id="{category}">
             <h2>{display_category} ({len(category_tips)} tips)</h2>
             <div class="card-grid">
         """
@@ -859,70 +1156,120 @@ def generate_tips_by_topic_report(extracted_data):
     return html
 
 def generate_workflows_report(extracted_data):
-    """Generate step-by-step workflows report."""
+    """Generate step-by-step workflows report with category grouping."""
     html = HTML_HEAD.format(title="Workflows - AI Knowledge Base")
 
     workflows = extracted_data.get('workflows', [])
+    
+    # Categorize workflows by first significant word in name
+    categories = {}
+    for workflow in workflows:
+        name = workflow.get('name', 'Unnamed Workflow')
+        # Extract category from name (first word or common patterns)
+        words = name.split()
+        if words:
+            first_word = words[0].lower()
+            # Normalize common categories
+            if first_word in ['how', 'step', 'steps']:
+                first_word = words[1].lower() if len(words) > 1 else 'general'
+            elif first_word in ['setting', 'set']:
+                first_word = 'setup'
+            elif first_word in ['creating', 'create']:
+                first_word = 'creation'
+            elif first_word in ['using', 'use']:
+                first_word = 'usage'
+            elif first_word in ['building', 'build']:
+                first_word = 'building'
+            
+            # Capitalize for display
+            category = first_word.capitalize()
+        else:
+            category = 'General'
+            
+        if category not in categories:
+            categories[category] = []
+        categories[category].append(workflow)
+    
+    # Sort categories alphabetically
+    sorted_categories = sorted(categories.keys())
 
     html += """
         <header>
             <h1>Step-by-Step Workflows</h1>
-            <p class="subtitle">{count} workflows extracted from tutorials</p>
+            <p class="subtitle">{count} workflows in {cat_count} categories</p>
             <div class="nav-links">
                 <a href="index.html" class="nav-link">Back to Index</a>
                 <a href="tips_by_topic.html" class="nav-link">Tips</a>
                 <a href="tool_mentions.html" class="nav-link">Tools</a>
             </div>
         </header>
-    """.format(count=len(workflows))
+    """.format(count=len(workflows), cat_count=len(categories))
 
-    html += "<section>"
+    # Table of Contents
+    html += """
+        <section>
+            <h2>📑 Quick Navigation</h2>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 2rem;">
+    """
+    for cat in sorted_categories:
+        count = len(categories[cat])
+        html += f'<a href="#{cat.lower()}" class="tag" style="text-decoration: none;">{cat} ({count})</a>'
+    html += "</div></section>"
 
-    for workflow in workflows:
-        video_id = workflow.get('source_video', '')
-        video_title = workflow.get('source_title', 'Unknown')
-        video_url = f"https://youtube.com/watch?v={video_id}" if video_id else '#'
-
+    # Grouped workflows
+    for category in sorted_categories:
+        cat_workflows = categories[category]
         html += f"""
-            <div class="card" style="margin-bottom: 1.5rem;">
-                <div class="card-title" style="font-size: 1.4rem; color: var(--accent);">
-                    {workflow.get('name', 'Unnamed Workflow')}
-                </div>
+            <section id="{category.lower()}">
+                <h2 style="border-left: 4px solid var(--accent); padding-left: 1rem;">{category} ({len(cat_workflows)})</h2>
         """
+        
+        for workflow in cat_workflows:
+            video_id = workflow.get('source_video', '')
+            video_title = workflow.get('source_title', 'Unknown')
+            video_url = f"https://youtube.com/watch?v={video_id}" if video_id else '#'
 
-        # Prerequisites
-        if workflow.get('prerequisites'):
-            html += """
-                <div style="margin: 1rem 0;">
-                    <strong>Prerequisites:</strong>
-                    <ul style="margin-top: 0.5rem; padding-left: 1.5rem;">
+            html += f"""
+                <div class="card" style="margin-bottom: 1.5rem;">
+                    <div class="card-title" style="font-size: 1.4rem; color: var(--accent);">
+                        {workflow.get('name', 'Unnamed Workflow')}
+                    </div>
             """
-            for prereq in workflow['prerequisites']:
-                html += f"<li>{prereq}</li>"
-            html += "</ul></div>"
 
-        # Steps
-        if workflow.get('steps'):
-            html += """
-                <div style="margin: 1rem 0;">
-                    <strong>Steps:</strong>
-                    <ol style="margin-top: 0.5rem; padding-left: 1.5rem;">
-            """
-            for step in workflow['steps']:
-                html += f"<li style='margin: 0.5rem 0;'>{step}</li>"
-            html += "</ol></div>"
+            # Prerequisites
+            if workflow.get('prerequisites'):
+                html += """
+                    <div style="margin: 1rem 0;">
+                        <strong>Prerequisites:</strong>
+                        <ul style="margin-top: 0.5rem; padding-left: 1.5rem;">
+                """
+                for prereq in workflow['prerequisites']:
+                    html += f"<li>{prereq}</li>"
+                html += "</ul></div>"
 
-        html += f"""
-                <div class="card-source">
-                    Source: <a href="{video_url}" target="_blank">{video_title}</a>
+            # Steps
+            if workflow.get('steps'):
+                html += """
+                    <div style="margin: 1rem 0;">
+                        <strong>Steps:</strong>
+                        <ol style="margin-top: 0.5rem; padding-left: 1.5rem;">
+                """
+                for step in workflow['steps']:
+                    html += f"<li style='margin: 0.5rem 0;'>{step}</li>"
+                html += "</ol></div>"
+
+            html += f"""
+                    <div class="card-source">
+                        Source: <a href="{video_url}" target="_blank">{video_title}</a>
+                    </div>
                 </div>
-            </div>
-        """
+            """
+        
+        html += "</section>"
 
     if not workflows:
         html += '<div class="empty-state">No workflows extracted yet. Run extract_knowledge.py to extract workflows from transcripts.</div>'
 
-    html += "</section>"
     html += HTML_FOOTER.format(date=datetime.now().strftime('%Y-%m-%d %H:%M'))
 
     return html
@@ -943,11 +1290,26 @@ def generate_tool_mentions_report(extracted_data, db):
 
     # Build tool -> videos mapping
     tool_videos = {}
+    
+    def is_valid_tool_name(name):
+        """Filter out garbage tool names like numbers, single chars, etc."""
+        if not name or len(name) < 2:
+            return False
+        # Reject pure numbers
+        if name.isdigit():
+            return False
+        # Reject single special characters
+        if name in ['-', '.', ':', ';', ',', '/', '\\', '|', '_']:
+            return False
+        # Reject very short names that are just punctuation/numbers
+        if len(name) <= 2 and not name.isalpha():
+            return False
+        return True
 
     # From LLM extraction
     for tool in tools_data:
         tool_name = tool.get('name', '').lower()
-        if tool_name:
+        if tool_name and is_valid_tool_name(tool_name):
             if tool_name not in tool_videos:
                 tool_videos[tool_name] = {
                     'name': tool.get('name', ''),
@@ -967,14 +1329,21 @@ def generate_tool_mentions_report(extracted_data, db):
     # From transcript analyzer
     for video_id, tools in analyzer_tools.items():
         # Find video title
-        video_title = 'Unknown'
+        video_title = None
         for tutorial in db.get('tutorials', []):
             if tutorial.get('video_id') == video_id:
-                video_title = tutorial.get('title', 'Unknown')
+                video_title = tutorial.get('title')
                 break
+        
+        # Skip if video title is unknown/missing - these produce broken links
+        if not video_title or video_title == 'Unknown' or video_title == 'Unknown Title':
+            continue
 
         for tool_name in tools:
             tool_lower = tool_name.lower()
+            # Skip invalid tool names
+            if not is_valid_tool_name(tool_lower):
+                continue
             if tool_lower not in tool_videos:
                 tool_videos[tool_lower] = {
                     'name': tool_name,
@@ -1012,8 +1381,8 @@ def generate_tool_mentions_report(extracted_data, db):
                 <tbody>
     """
 
-    # Sort by number of mentions
-    for tool_key in sorted(tool_videos.keys(), key=lambda x: -len(tool_videos[x]['videos'])):
+    # Sort alphabetically by tool name
+    for tool_key in sorted(tool_videos.keys()):
         tool_info = tool_videos[tool_key]
         video_links = []
         for video in tool_info['videos'][:3]:
@@ -1262,6 +1631,7 @@ def generate_all_reports():
 
     # Core reports
     reports = [
+        ('universal_insights.html', generate_universal_insights_report(db)),
         ('index.html', generate_index_report(db, url_cache)),
         ('github_repos.html', generate_github_report(db)),
         ('huggingface.html', generate_huggingface_report(db)),
