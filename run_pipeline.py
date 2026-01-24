@@ -45,6 +45,7 @@ class Stage:
     args: List[str] = field(default_factory=list)
     default_enabled: bool = True
     requires_api_key: bool = False
+    timeout: int = 600  # Default 10 minutes
 
 
 @dataclass
@@ -99,7 +100,8 @@ STAGES = [
         script='extract_knowledge.py',
         description='LLM knowledge extraction (Ollama/QWEN)',
         default_enabled=True,
-        requires_api_key=False
+        requires_api_key=False,
+        timeout=3600  # 60 minutes - local LLM is slower but free
     ),
     Stage(
         id='reports',
@@ -185,7 +187,7 @@ class PipelineRunner:
                 encoding='utf-8',
                 errors='replace',
                 cwd=str(SCRIPT_DIR),
-                timeout=600  # 10 minute timeout per stage
+                timeout=stage.timeout
             )
             duration = time.time() - start
 
@@ -216,8 +218,8 @@ class PipelineRunner:
             return StageResult(
                 stage_id=stage.id,
                 status='failed',
-                duration_seconds=600,
-                errors=["Stage timed out after 10 minutes"]
+                duration_seconds=stage.timeout,
+                errors=[f"Stage timed out after {stage.timeout // 60} minutes"]
             )
         except Exception as e:
             return StageResult(
