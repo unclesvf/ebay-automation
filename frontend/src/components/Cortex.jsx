@@ -32,10 +32,8 @@ const Cortex = () => {
     }
   };
 
-  useEffect(() => {
-    // Initial load: peek
-    performSearch('');
-  }, []);
+  // Note: Removed empty search on mount to avoid unnecessary API call
+  // User will explicitly search when they enter a query
 
   // Re-search when threshold changes (with debounce)
   useEffect(() => {

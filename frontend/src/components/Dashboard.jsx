@@ -78,50 +78,26 @@ const Dashboard = () => {
       </header>
       
       <div className="stats-grid">
-        <StatCard 
-          icon={Youtube} 
-          label="YouTube Analysis" 
-          value="Enabled" 
-          sub="qwen2.5:32b" 
-          color="var(--primary-cyan)" 
+        <StatCard
+          icon={Youtube}
+          label="YouTube Analysis"
+          value="Enabled"
+          sub="qwen2.5:32b"
+          color="var(--primary-cyan)"
         />
-        <StatCard 
-          icon={Database} 
-          label="Knowledge Base" 
-          value="Online" 
-          sub="ChromaDB" 
-          color="var(--secondary-purple)" 
+        <StatCard
+          icon={Database}
+          label="Knowledge Base"
+          value="Online"
+          sub="ChromaDB"
+          color="var(--secondary-purple)"
         />
-        <StatCard 
-          icon={FileText} 
-          label="Latest Action" 
-          value={isRunning ? "Running..." : "Idle"} 
-          sub="Check logs" 
-          color={isRunning ? "var(--accent-green)" : "var(--text-muted)"} 
-        />
-      </div>
-
-      <div className="stats-grid">
-        <StatCard 
-          icon={Youtube} 
-          label="YouTube Analysis" 
-          value="Enabled" 
-          sub="qwen2.5:32b" 
-          color="var(--primary-cyan)" 
-        />
-        <StatCard 
-          icon={Database} 
-          label="Knowledge Base" 
-          value="Online" 
-          sub="ChromaDB" 
-          color="var(--secondary-purple)" 
-        />
-        <StatCard 
-          icon={FileText} 
-          label="Latest Action" 
-          value={isRunning ? "Running..." : "Idle"} 
-          sub="Check logs" 
-          color={isRunning ? "var(--accent-green)" : "var(--text-muted)"} 
+        <StatCard
+          icon={FileText}
+          label="Latest Action"
+          value={isRunning ? "Running..." : "Idle"}
+          sub="Check logs"
+          color={isRunning ? "var(--accent-green)" : "var(--text-muted)"}
         />
       </div>
 
