@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
-import { Activity, Brain, Settings, Cpu, LineChart } from 'lucide-react';
+import { Activity, Brain, Settings, Cpu, LineChart, FileText } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const Layout = () => {
@@ -10,6 +10,7 @@ const Layout = () => {
     { path: '/', icon: Activity, label: 'Mission Control' },
     { path: '/cortex', icon: Brain, label: 'Cortex' },
     { path: '/insights', icon: LineChart, label: 'Insights' },
+    { path: '/reports', icon: FileText, label: 'Reports' },
     { path: '/synapse', icon: Settings, label: 'Synapse' },
   ];
 

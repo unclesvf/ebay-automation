@@ -27,6 +27,9 @@ export const api = {
   setDryRun: (enabled) => client.post('/config/dry_run', { dry_run: enabled }),
   
   // Universal Insights
-  getInsights: (limit = 50, sortBy = 'impact') => 
+  getInsights: (limit = 50, sortBy = 'impact') =>
     client.get('/insights', { params: { limit, sort_by: sortBy } }),
+
+  // Reports
+  getReports: () => client.get('/reports/list'),
 };

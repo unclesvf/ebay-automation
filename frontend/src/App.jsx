@@ -5,6 +5,7 @@ import Dashboard from './components/Dashboard';
 import Cortex from './components/Cortex';
 import Synapse from './components/Synapse';
 import UniversalInsights from './components/UniversalInsights';
+import Reports from './components/Reports';
 import { AnimatePresence } from 'framer-motion';
 
 function App() {
@@ -14,6 +15,7 @@ function App() {
         <Route index element={<Dashboard />} />
         <Route path="cortex" element={<Cortex />} />
         <Route path="insights" element={<UniversalInsights />} />
+        <Route path="reports" element={<Reports />} />
         <Route path="synapse" element={<Synapse />} />
       </Route>
     </Routes>

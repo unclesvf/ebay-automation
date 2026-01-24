@@ -43,7 +43,51 @@ def read_root():
 
 # Mount reports directory
 if os.path.exists(EXPORTS_PATH):
-    app.mount("/reports", StaticFiles(directory=EXPORTS_PATH), name="reports")
+    app.mount("/reports-static", StaticFiles(directory=EXPORTS_PATH), name="reports")
+
+@app.get("/reports/list")
+def list_reports():
+    """List all available HTML reports."""
+    reports = []
+    report_metadata = {
+        'index.html': {'name': 'Main Index', 'description': 'Overview of all Knowledge Base content', 'icon': '🏠'},
+        'universal_insights.html': {'name': 'Universal Insights', 'description': 'Top content ranked by impact', 'icon': '📊'},
+        'github_repos.html': {'name': 'GitHub Repos', 'description': 'Discovered GitHub repositories', 'icon': '🐙'},
+        'huggingface.html': {'name': 'HuggingFace', 'description': 'ML models and datasets', 'icon': '🤗'},
+        'tutorials.html': {'name': 'Tutorials', 'description': 'Video tutorials with transcripts', 'icon': '🎬'},
+        'tips_by_topic.html': {'name': 'Tips by Topic', 'description': 'Actionable tips organized by category', 'icon': '💡'},
+        'workflows.html': {'name': 'Workflows', 'description': 'Step-by-step guides with diagrams', 'icon': '🔄'},
+        'tool_mentions.html': {'name': 'Tool Mentions', 'description': 'Tools mentioned across tutorials', 'icon': '🛠️'},
+        'styles.html': {'name': 'Style Codes', 'description': 'Midjourney --sref codes', 'icon': '🎨'},
+        'search.html': {'name': 'Search', 'description': 'Search across transcripts', 'icon': '🔍'},
+        'url_cache.html': {'name': 'URL Cache', 'description': 'Expanded t.co links', 'icon': '🔗'},
+    }
+
+    if os.path.exists(EXPORTS_PATH):
+        for filename in os.listdir(EXPORTS_PATH):
+            if filename.endswith('.html'):
+                filepath = os.path.join(EXPORTS_PATH, filename)
+                stat = os.stat(filepath)
+                meta = report_metadata.get(filename, {
+                    'name': filename.replace('.html', '').replace('_', ' ').title(),
+                    'description': 'Report',
+                    'icon': '📄'
+                })
+                reports.append({
+                    'filename': filename,
+                    'name': meta['name'],
+                    'description': meta['description'],
+                    'icon': meta['icon'],
+                    'url': f'/reports-static/{filename}',
+                    'size': stat.st_size,
+                    'modified': stat.st_mtime
+                })
+
+    # Sort by predefined order
+    order = list(report_metadata.keys())
+    reports.sort(key=lambda x: order.index(x['filename']) if x['filename'] in order else 999)
+
+    return {'reports': reports, 'base_url': '/reports-static'}
 
 @app.get("/status")
 def get_status():
