@@ -31,6 +31,17 @@ try:
 except ImportError:
     HAS_ANTHROPIC = False
 
+try:
+    import requests as ollama_requests
+    HAS_OLLAMA = True
+except ImportError:
+    HAS_OLLAMA = False
+
+# LLM Backend setting
+LLM_BACKEND = 'ollama'  # 'ollama' or 'claude'
+OLLAMA_MODEL = 'qwen2.5:32b'
+OLLAMA_URL = 'http://localhost:11434/api/generate'
+
 # Paths
 KNOWLEDGE_BASE = Path(r"D:\AI-Knowledge-Base")
 MASTER_DB = KNOWLEDGE_BASE / "master_db.json"
@@ -232,6 +243,55 @@ def chunk_transcript(text, chunk_size=CHUNK_SIZE, overlap=CHUNK_OVERLAP):
 
 API_KEY = None  # Global API key storage
 
+
+def extract_with_ollama(chunk, video_title, channel, segment_num, total_segments):
+    """Use Ollama (local QWEN) to extract knowledge from a chunk."""
+    prompt = EXTRACTION_PROMPT.format(
+        video_title=video_title,
+        channel=channel,
+        segment_num=segment_num,
+        total_segments=total_segments,
+        transcript_chunk=chunk
+    )
+
+    try:
+        response = ollama_requests.post(
+            OLLAMA_URL,
+            json={
+                'model': OLLAMA_MODEL,
+                'prompt': prompt,
+                'stream': False,
+                'options': {
+                    'temperature': 0.3,
+                    'num_predict': 2000
+                }
+            },
+            timeout=120  # 2 minute timeout per chunk
+        )
+        response.raise_for_status()
+
+        result = response.json()
+        response_text = result.get('response', '')
+
+        # Parse JSON from response
+        json_match = re.search(r'\{[\s\S]*\}', response_text)
+        if json_match:
+            return json.loads(json_match.group())
+        else:
+            print(f"  Warning: Could not parse JSON from response")
+            return None
+
+    except json.JSONDecodeError as e:
+        print(f"  Warning: JSON parse error: {e}")
+        return None
+    except ollama_requests.exceptions.Timeout:
+        print(f"  Warning: Ollama request timed out")
+        return None
+    except Exception as e:
+        print(f"  Error calling Ollama: {e}")
+        return None
+
+
 def extract_with_claude(chunk, video_title, channel, segment_num, total_segments):
     """Use Claude API to extract knowledge from a chunk."""
     global API_KEY
@@ -287,6 +347,14 @@ def extract_with_claude(chunk, video_title, channel, segment_num, total_segments
     except Exception as e:
         print(f"  Error calling Claude API: {e}")
         return None
+
+
+def extract_knowledge(chunk, video_title, channel, segment_num, total_segments):
+    """Extract knowledge using configured backend (Ollama or Claude)."""
+    if LLM_BACKEND == 'ollama':
+        return extract_with_ollama(chunk, video_title, channel, segment_num, total_segments)
+    else:
+        return extract_with_claude(chunk, video_title, channel, segment_num, total_segments)
 
 
 def merge_extractions(extractions):
@@ -402,7 +470,7 @@ def process_transcript(video_id, force=False, dry_run=False):
     for i, chunk in enumerate(chunks, 1):
         print(f"  Processing chunk {i}/{len(chunks)}...", end=' ')
 
-        result = extract_with_claude(
+        result = extract_knowledge(
             chunk,
             video_title,
             channel,
@@ -831,16 +899,26 @@ Requirements:
             print(f"  Total tokens:  {SESSION_TOKENS['total']:,}")
             print(f"  API calls:     {SESSION_TOKENS['api_calls']}")
     else:
-        # Check for API key before processing
+        # Check for LLM backend availability before processing
         if not args.dry_run:
-            if not HAS_ANTHROPIC:
-                print("ERROR: anthropic package not installed")
-                print("Run: pip install anthropic")
-                sys.exit(1)
-            if not API_KEY and not os.environ.get('ANTHROPIC_API_KEY'):
-                print("ERROR: ANTHROPIC_API_KEY not provided")
-                print("Use --api-key YOUR_KEY or set ANTHROPIC_API_KEY environment variable")
-                sys.exit(1)
+            if LLM_BACKEND == 'ollama':
+                # Check if Ollama is running
+                try:
+                    resp = ollama_requests.get('http://localhost:11434', timeout=5)
+                    print(f"Using Ollama with model: {OLLAMA_MODEL}")
+                except Exception:
+                    print("ERROR: Ollama is not running at localhost:11434")
+                    print("Start Ollama first: ollama serve")
+                    sys.exit(1)
+            else:
+                if not HAS_ANTHROPIC:
+                    print("ERROR: anthropic package not installed")
+                    print("Run: pip install anthropic")
+                    sys.exit(1)
+                if not API_KEY and not os.environ.get('ANTHROPIC_API_KEY'):
+                    print("ERROR: ANTHROPIC_API_KEY not provided")
+                    print("Use --api-key YOUR_KEY or set ANTHROPIC_API_KEY environment variable")
+                    sys.exit(1)
 
         process_all_transcripts(force=args.force, dry_run=args.dry_run)
 

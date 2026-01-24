@@ -97,9 +97,9 @@ STAGES = [
     Stage(
         id='llm',
         script='extract_knowledge.py',
-        description='Claude API knowledge extraction (costs $)',
+        description='LLM knowledge extraction (Ollama/QWEN)',
         default_enabled=True,
-        requires_api_key=True
+        requires_api_key=False
     ),
     Stage(
         id='reports',
