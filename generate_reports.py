@@ -1639,7 +1639,7 @@ def generate_tool_mentions_report(extracted_data, db):
     return html
 
 def generate_search_page():
-    """Generate interactive transcript search page."""
+    """Generate interactive transcript search page with live API search."""
     html = HTML_HEAD.format(title="Transcript Search - AI Knowledge Base")
 
     # Add search-specific styles
@@ -1651,6 +1651,25 @@ def generate_search_page():
             margin-bottom: 2rem;
         }
 
+        .search-form {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+
+        .search-field {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .search-field label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
         .search-input {
             width: 100%;
             padding: 1rem;
@@ -1659,12 +1678,15 @@ def generate_search_page():
             border: 2px solid var(--border);
             border-radius: 8px;
             color: var(--text-primary);
-            margin-bottom: 1rem;
         }
 
         .search-input:focus {
             outline: none;
             border-color: var(--accent);
+        }
+
+        .search-input::placeholder {
+            color: var(--text-secondary);
         }
 
         .search-btn {
@@ -1676,14 +1698,41 @@ def generate_search_page():
             border-radius: 8px;
             cursor: pointer;
             transition: background 0.2s;
+            height: fit-content;
         }
 
         .search-btn:hover {
             background: var(--accent-hover);
         }
 
+        .search-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .search-stats {
+            display: flex;
+            gap: 2rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
         .search-results {
             margin-top: 2rem;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .results-count {
+            color: var(--text-secondary);
         }
 
         .result-item {
@@ -1692,6 +1741,28 @@ def generate_search_page():
             border-radius: 8px;
             margin-bottom: 1rem;
             border-left: 3px solid var(--accent);
+            transition: transform 0.2s;
+        }
+
+        .result-item:hover {
+            transform: translateX(4px);
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.75rem;
+        }
+
+        .result-video-title {
+            font-weight: 600;
+            color: var(--link);
+            text-decoration: none;
+        }
+
+        .result-video-title:hover {
+            color: var(--link-hover);
         }
 
         .result-timestamp {
@@ -1701,24 +1772,32 @@ def generate_search_page():
             padding: 0.25rem 0.75rem;
             border-radius: 4px;
             font-size: 0.85rem;
-            margin-right: 0.5rem;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+
+        .result-timestamp:hover {
+            background: var(--accent-hover);
         }
 
         .result-text {
             margin: 1rem 0;
             line-height: 1.8;
+            color: var(--text-primary);
         }
 
-        .result-video {
+        .result-meta {
+            display: flex;
+            gap: 1rem;
             color: var(--text-secondary);
-            font-size: 0.9rem;
+            font-size: 0.85rem;
         }
 
         .search-tips {
             background: var(--bg-card);
             padding: 1rem;
             border-radius: 8px;
-            margin-top: 1rem;
+            margin-top: 1.5rem;
             font-size: 0.9rem;
         }
 
@@ -1729,18 +1808,25 @@ def generate_search_page():
         }
 
         #loading {
-            display: none;
             text-align: center;
             padding: 2rem;
             color: var(--text-secondary);
         }
 
-        .cli-command {
-            background: var(--bg-primary);
+        #error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #ef4444;
             padding: 1rem;
             border-radius: 8px;
-            font-family: monospace;
             margin-top: 1rem;
+            display: none;
+        }
+
+        .highlight {
+            background: rgba(233, 69, 96, 0.3);
+            padding: 0.1rem 0.2rem;
+            border-radius: 2px;
         }
     </style>""")
 
@@ -1756,16 +1842,24 @@ def generate_search_page():
         </header>
 
         <div class="search-container">
-            <p style="margin-bottom: 1rem; color: var(--text-secondary);">
-                This page provides instructions for using the CLI search tool.
-                For real-time search, use the command-line interface.
-            </p>
+            <form class="search-form" id="searchForm" onsubmit="performSearch(event)">
+                <div class="search-field">
+                    <label for="query">Search Query</label>
+                    <input type="text" id="query" class="search-input" placeholder="e.g., CLAUDE.md setup, MCP server, best practices..." autofocus>
+                </div>
+                <div class="search-field" style="min-width: 150px; flex: 0.3;">
+                    <label for="limit">Results</label>
+                    <select id="limit" class="search-input" style="padding: 0.9rem 1rem;">
+                        <option value="10">10</option>
+                        <option value="20" selected>20</option>
+                        <option value="50">50</option>
+                    </select>
+                </div>
+                <button type="submit" class="search-btn" id="searchBtn">Search</button>
+            </form>
 
-            <div class="cli-command">
-                <strong>Quick Search Commands:</strong><br><br>
-                <code>python transcript_search.py "your search query"</code><br><br>
-                <code>python transcript_search.py "claude.md" --limit 10</code><br><br>
-                <code>python transcript_search.py "plan mode" --topic claude-code</code>
+            <div class="search-stats" id="indexStats">
+                Loading index stats...
             </div>
 
             <div class="search-tips">
@@ -1773,59 +1867,147 @@ def generate_search_page():
                 <ul style="margin-top: 0.5rem; padding-left: 1.5rem;">
                     <li>Use quotes for exact phrases: <code>"plan mode"</code></li>
                     <li>Use OR for alternatives: <code>cursor OR vscode</code></li>
-                    <li>Filter by topic: <code>--topic claude-code</code></li>
-                    <li>Filter by channel: <code>--channel "AI with Avthar"</code></li>
-                    <li>Export results: <code>--export results.json</code></li>
+                    <li>Use * for prefix matching: <code>config*</code></li>
                 </ul>
             </div>
         </div>
 
-        <section>
-            <h2>Indexed Content</h2>
-            <p style="color: var(--text-secondary); margin-bottom: 1rem;">
-                The search index contains transcripts from tutorial videos.
-                Each result includes a clickable timestamp link to jump directly to that moment in the video.
-            </p>
+        <div id="error-message"></div>
 
-            <div class="card-grid">
-                <div class="card">
-                    <div class="card-title">Full-Text Search</div>
-                    <p>Search across all transcript text using SQLite FTS5 for fast, accurate results.</p>
-                </div>
-                <div class="card">
-                    <div class="card-title">Timestamp Links</div>
-                    <p>Every result includes a YouTube link with timestamp to jump directly to that moment.</p>
-                </div>
-                <div class="card">
-                    <div class="card-title">Topic Filtering</div>
-                    <p>Filter results by topic (claude-code, prompting, etc.) or channel name.</p>
-                </div>
-                <div class="card">
-                    <div class="card-title">JSON Export</div>
-                    <p>Export search results to JSON for further processing or integration.</p>
-                </div>
+        <div id="loading" style="display: none;">
+            <p>Searching transcripts...</p>
+        </div>
+
+        <div class="search-results" id="results" style="display: none;">
+            <div class="results-header">
+                <h2>Results</h2>
+                <span class="results-count" id="resultsCount"></span>
             </div>
-        </section>
+            <div id="resultsList"></div>
+        </div>
 
-        <section>
-            <h2>Example Searches</h2>
-            <div class="cli-command">
-                # Find all mentions of CLAUDE.md<br>
-                <code>python transcript_search.py "claude.md"</code><br><br>
+        <script>
+            const API_BASE = window.location.port === '5173' || window.location.port === '5174'
+                ? 'http://localhost:8000'
+                : '';
 
-                # Find best practices tips<br>
-                <code>python transcript_search.py "best practice" --limit 20</code><br><br>
+            // Load index stats on page load
+            async function loadStats() {
+                try {
+                    const resp = await fetch(`${API_BASE}/search/stats`);
+                    const data = await resp.json();
+                    if (data.indexed) {
+                        document.getElementById('indexStats').innerHTML = `
+                            <span><strong>${data.total_transcripts}</strong> videos indexed</span>
+                            <span><strong>${data.total_segments.toLocaleString()}</strong> searchable segments</span>
+                            <span><strong>${data.channels?.length || 0}</strong> channels</span>
+                        `;
+                    } else {
+                        document.getElementById('indexStats').innerHTML = 'Search index not available. Run transcript_search.py --index to build it.';
+                    }
+                } catch (e) {
+                    document.getElementById('indexStats').innerHTML = 'Could not load index stats';
+                }
+            }
 
-                # Search for MCP server setup<br>
-                <code>python transcript_search.py "MCP server"</code><br><br>
+            async function performSearch(event) {
+                event.preventDefault();
 
-                # Show search index statistics<br>
-                <code>python transcript_search.py --stats</code><br><br>
+                const query = document.getElementById('query').value.trim();
+                const limit = document.getElementById('limit').value;
 
-                # Rebuild the search index<br>
-                <code>python transcript_search.py --index</code>
-            </div>
-        </section>
+                if (!query) {
+                    showError('Please enter a search query');
+                    return;
+                }
+
+                const searchBtn = document.getElementById('searchBtn');
+                const loading = document.getElementById('loading');
+                const results = document.getElementById('results');
+                const errorMsg = document.getElementById('error-message');
+
+                searchBtn.disabled = true;
+                loading.style.display = 'block';
+                results.style.display = 'none';
+                errorMsg.style.display = 'none';
+
+                try {
+                    const resp = await fetch(`${API_BASE}/search?q=${encodeURIComponent(query)}&limit=${limit}`);
+
+                    if (!resp.ok) {
+                        const err = await resp.json();
+                        throw new Error(err.detail || 'Search failed');
+                    }
+
+                    const data = await resp.json();
+                    displayResults(data, query);
+
+                } catch (e) {
+                    showError(e.message);
+                } finally {
+                    searchBtn.disabled = false;
+                    loading.style.display = 'none';
+                }
+            }
+
+            function showError(message) {
+                const errorMsg = document.getElementById('error-message');
+                errorMsg.textContent = message;
+                errorMsg.style.display = 'block';
+            }
+
+            function highlightText(text, query) {
+                const words = query.replace(/["*]/g, '').split(/\\s+OR\\s+|\\s+/i).filter(w => w.length > 2);
+                let highlighted = text;
+                words.forEach(word => {
+                    const regex = new RegExp(`(${word})`, 'gi');
+                    highlighted = highlighted.replace(regex, '<span class="highlight">$1</span>');
+                });
+                return highlighted;
+            }
+
+            function displayResults(data, query) {
+                const results = document.getElementById('results');
+                const resultsList = document.getElementById('resultsList');
+                const resultsCount = document.getElementById('resultsCount');
+
+                resultsCount.textContent = `${data.count} results found`;
+
+                if (data.results.length === 0) {
+                    resultsList.innerHTML = '<p style="color: var(--text-secondary); padding: 2rem; text-align: center;">No results found. Try different keywords or check spelling.</p>';
+                } else {
+                    resultsList.innerHTML = data.results.map(r => `
+                        <div class="result-item">
+                            <div class="result-header">
+                                <a href="https://youtube.com/watch?v=${r.video_id}" target="_blank" class="result-video-title">
+                                    ${r.title}
+                                </a>
+                                <a href="${r.url}" target="_blank" class="result-timestamp">
+                                    ⏱️ ${r.timestamp}
+                                </a>
+                            </div>
+                            <div class="result-text">${highlightText(r.text, query)}</div>
+                            <div class="result-meta">
+                                <span>📺 ${r.channel}</span>
+                                ${r.topics.length ? `<span>🏷️ ${r.topics.join(', ')}</span>` : ''}
+                            </div>
+                        </div>
+                    `).join('');
+                }
+
+                results.style.display = 'block';
+            }
+
+            // Initialize
+            loadStats();
+
+            // Allow Enter key to search
+            document.getElementById('query').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    performSearch(e);
+                }
+            });
+        </script>
     """
 
     html += HTML_FOOTER.format(date=datetime.now().strftime('%Y-%m-%d %H:%M'))

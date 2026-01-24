@@ -6,7 +6,8 @@ import os
 import yaml
 import json
 import logging
-from typing import Dict, Any, List
+import sqlite3
+from typing import Dict, Any, List, Optional
 from fastapi.staticfiles import StaticFiles
 
 # Setup Logger
@@ -18,7 +19,7 @@ app = FastAPI(title="Ambrose API")
 # CORS for Dev
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"], # Vite Dev Server
+    allow_origins=["http://localhost:5173", "http://localhost:5174", "null"], # Vite Dev Server + static files
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -30,6 +31,7 @@ CONFIG_PATH = os.path.join(BASE_DIR, 'rules', 'scott_config.yaml')
 LOG_PATH = os.path.join(BASE_DIR, 'orchestrator.log')
 DB_PATH = r'D:\AI-Knowledge-Base\chromadb'
 EXPORTS_PATH = r'D:\AI-Knowledge-Base\exports'
+SEARCH_INDEX_PATH = r'D:\AI-Knowledge-Base\tutorials\search_index.db'
 
 # Global State
 ORCHESTRATOR_PROCESS = None
@@ -89,6 +91,146 @@ def list_reports():
     reports.sort(key=lambda x: order.index(x['filename']) if x['filename'] in order else 999)
 
     return {'reports': reports, 'base_url': '/reports-static'}
+
+@app.get("/search")
+def search_transcripts(
+    q: str,
+    channel: Optional[str] = None,
+    topic: Optional[str] = None,
+    limit: int = 20
+):
+    """
+    Search YouTube transcripts using FTS5 full-text search.
+    Returns timestamped results with links to video moments.
+    """
+    if not os.path.exists(SEARCH_INDEX_PATH):
+        raise HTTPException(status_code=404, detail="Search index not found. Run transcript_search.py --index first.")
+
+    if not q or len(q.strip()) < 2:
+        raise HTTPException(status_code=400, detail="Query must be at least 2 characters")
+
+    try:
+        conn = sqlite3.connect(SEARCH_INDEX_PATH)
+        cursor = conn.cursor()
+
+        # Escape special FTS5 characters
+        def escape_fts_query(query):
+            words = query.split()
+            escaped = []
+            for word in words:
+                if any(c in word for c in '.+-^$()[]{}|\\:') and not word.startswith('"'):
+                    escaped.append(f'"{word}"')
+                else:
+                    escaped.append(word)
+            return ' '.join(escaped)
+
+        fts_query = escape_fts_query(q.strip())
+
+        # Build query
+        sql = '''
+            SELECT
+                fts.video_id,
+                t.title,
+                t.channel,
+                t.topics,
+                fts.timestamp_seconds,
+                fts.text,
+                bm25(transcript_fts) as score
+            FROM transcript_fts fts
+            JOIN transcripts t ON fts.video_id = t.video_id
+            WHERE transcript_fts MATCH ?
+        '''
+        params = [fts_query]
+
+        if channel:
+            sql += ' AND t.channel LIKE ?'
+            params.append(f'%{channel}%')
+
+        if topic:
+            sql += ' AND t.topics LIKE ?'
+            params.append(f'%{topic}%')
+
+        sql += ' ORDER BY score LIMIT ?'
+        params.append(min(limit, 100))  # Cap at 100
+
+        cursor.execute(sql, params)
+        rows = cursor.fetchall()
+
+        # Format results
+        results = []
+        for video_id, title, channel_name, topics_json, timestamp, text, score in rows:
+            # Format timestamp
+            ts = int(timestamp)
+            if ts >= 3600:
+                timestamp_str = f"{ts // 3600}:{(ts % 3600) // 60:02d}:{ts % 60:02d}"
+            else:
+                timestamp_str = f"{ts // 60}:{ts % 60:02d}"
+
+            results.append({
+                'video_id': video_id,
+                'title': title or 'Unknown',
+                'channel': channel_name or 'Unknown',
+                'topics': json.loads(topics_json) if topics_json else [],
+                'timestamp': timestamp_str,
+                'timestamp_seconds': ts,
+                'text': text,
+                'url': f"https://youtube.com/watch?v={video_id}&t={ts}s",
+                'score': round(score, 3)
+            })
+
+        # Get stats
+        cursor.execute('SELECT COUNT(DISTINCT video_id) FROM transcript_fts')
+        total_videos = cursor.fetchone()[0]
+        cursor.execute('SELECT COUNT(*) FROM transcript_fts')
+        total_segments = cursor.fetchone()[0]
+
+        conn.close()
+
+        return {
+            'query': q,
+            'results': results,
+            'count': len(results),
+            'stats': {
+                'total_videos': total_videos,
+                'total_segments': total_segments
+            }
+        }
+
+    except sqlite3.OperationalError as e:
+        raise HTTPException(status_code=400, detail=f"Search error: {str(e)}. Try using quotes for exact phrases.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
+
+@app.get("/search/stats")
+def search_stats():
+    """Get search index statistics."""
+    if not os.path.exists(SEARCH_INDEX_PATH):
+        return {'indexed': False, 'message': 'Search index not found'}
+
+    try:
+        conn = sqlite3.connect(SEARCH_INDEX_PATH)
+        cursor = conn.cursor()
+
+        cursor.execute('SELECT COUNT(*) FROM transcripts')
+        total_transcripts = cursor.fetchone()[0]
+
+        cursor.execute('SELECT COUNT(*) FROM transcript_fts')
+        total_segments = cursor.fetchone()[0]
+
+        cursor.execute('SELECT channel, COUNT(*) as count FROM transcripts GROUP BY channel ORDER BY count DESC')
+        channels = [{'name': row[0], 'count': row[1]} for row in cursor.fetchall()]
+
+        conn.close()
+
+        return {
+            'indexed': True,
+            'total_transcripts': total_transcripts,
+            'total_segments': total_segments,
+            'channels': channels,
+            'db_path': SEARCH_INDEX_PATH
+        }
+    except Exception as e:
+        return {'indexed': False, 'error': str(e)}
 
 @app.get("/status")
 def get_status():
