@@ -124,17 +124,26 @@ def analyze_and_organize():
         print("-" * 80)
 
         moved_count = 0
+        created_folders = []
         for email in emails_to_move:
             target = email['target']
-            if target in subfolders:
+            # Auto-create subfolder if it doesn't exist
+            if target not in subfolders:
                 try:
-                    email['item'].Move(subfolders[target])
-                    print(f"  MOVED: {email['subject'][:40]} -> {target}")
-                    moved_count += 1
+                    new_folder = folder.Folders.Add(target)
+                    subfolders[target] = new_folder
+                    created_folders.append(target)
+                    print(f"  CREATED: Subfolder '{target}'")
                 except Exception as e:
-                    print(f"  ERROR moving {email['subject'][:30]}: {e}")
-            else:
-                print(f"  SKIP: Subfolder '{target}' not found")
+                    print(f"  ERROR creating subfolder '{target}': {e}")
+                    continue
+
+            try:
+                email['item'].Move(subfolders[target])
+                print(f"  MOVED: {email['subject'][:40]} -> {target}")
+                moved_count += 1
+            except Exception as e:
+                print(f"  ERROR moving {email['subject'][:30]}: {e}")
 
         print(f"\nMoved {moved_count} emails")
 
