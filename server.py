@@ -7,6 +7,7 @@ import yaml
 import json
 import logging
 import sqlite3
+import threading
 from typing import Dict, Any, List, Optional
 from fastapi.staticfiles import StaticFiles
 
@@ -33,8 +34,9 @@ DB_PATH = r'D:\AI-Knowledge-Base\chromadb'
 EXPORTS_PATH = r'D:\AI-Knowledge-Base\exports'
 SEARCH_INDEX_PATH = r'D:\AI-Knowledge-Base\tutorials\search_index.db'
 
-# Global State
+# Global State (with thread-safe lock)
 ORCHESTRATOR_PROCESS = None
+ORCHESTRATOR_LOCK = threading.Lock()
 
 class ConfigUpdate(BaseModel):
     dry_run: bool
@@ -240,7 +242,8 @@ def search_stats():
 def get_status():
     """Check system health and running status."""
     global ORCHESTRATOR_PROCESS
-    is_running = ORCHESTRATOR_PROCESS is not None and ORCHESTRATOR_PROCESS.poll() is None
+    with ORCHESTRATOR_LOCK:
+        is_running = ORCHESTRATOR_PROCESS is not None and ORCHESTRATOR_PROCESS.poll() is None
     
     # Check Ollama
     ollama_status = "Unknown"
@@ -296,24 +299,23 @@ def update_dry_run(update: ConfigUpdate):
 def run_orchestrator(background_tasks: BackgroundTasks, profile: str = "scott_organizer"):
     """Trigger the orchestrator with optional profile."""
     global ORCHESTRATOR_PROCESS
-    if ORCHESTRATOR_PROCESS is not None and ORCHESTRATOR_PROCESS.poll() is None:
-        return {"status": "already_running", "profile": profile}
-    
-    cmd = ["python", os.path.join(BASE_DIR, "run_orchestrator.py"), CONFIG_PATH]
-    
-    # We run it as a subprocess
-    try:
-        # Open in new window or capture output? 
-        # For server, we usually capture logs to file (which orchestrator does anyway)
-        ORCHESTRATOR_PROCESS = subprocess.Popen(
-            cmd, 
-            cwd=BASE_DIR,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
-        return {"status": "started", "pid": ORCHESTRATOR_PROCESS.pid}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+
+    with ORCHESTRATOR_LOCK:
+        if ORCHESTRATOR_PROCESS is not None and ORCHESTRATOR_PROCESS.poll() is None:
+            return {"status": "already_running", "profile": profile}
+
+        cmd = ["python", os.path.join(BASE_DIR, "run_orchestrator.py"), CONFIG_PATH]
+
+        try:
+            ORCHESTRATOR_PROCESS = subprocess.Popen(
+                cmd,
+                cwd=BASE_DIR,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            )
+            return {"status": "started", "pid": ORCHESTRATOR_PROCESS.pid}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/logs")
 def get_logs(lines: int = 50):
@@ -373,18 +375,15 @@ def search_knowledge(query: str = "", limit: int = 20, threshold: float = 1.3):
         else:
             # List recent (peek)
             results = collection.peek(limit=limit)
-            # Similar structure but peek returns directly
             items = []
-            if results['ids']:
+            if results.get('ids'):
                 for i in range(len(results['ids'])):
-                     items.append({
+                    items.append({
                         "id": results['ids'][i],
-                        "content": results['documents'][i] if 'documents' in results and results['documents'] else "",
-                        "metadata": results['metadatas'][i]
+                        "content": results['documents'][i] if results.get('documents') and i < len(results['documents']) else "",
+                        "metadata": results['metadatas'][i] if results.get('metadatas') and i < len(results['metadatas']) else {}
                     })
-            # Start/Peek might behave differently depending on chromadb version, 
-            # safe fallback: return raw or empty if complex
-            return {"items": [], "raw_peek": str(results)} 
+            return {"items": items} 
 
     except Exception as e:
         return {"error": str(e)}

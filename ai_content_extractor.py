@@ -595,8 +595,15 @@ def extract_all_from_text(text, source_info=None, expand_tco=False, verbose=Fals
 def load_master_db():
     """Load the master database."""
     if os.path.exists(MASTER_DB_PATH):
-        with open(MASTER_DB_PATH, 'r', encoding='utf-8') as f:
-            return json.load(f)
+        try:
+            with open(MASTER_DB_PATH, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except json.JSONDecodeError as e:
+            logger.error(f"Master DB JSON is corrupted: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Failed to load master DB: {e}")
+            return None
     return None
 
 def save_master_db(db):
@@ -690,8 +697,15 @@ def process_existing_json():
         print(f"Twitter JSON not found: {TWITTER_JSON_PATH}")
         return
 
-    with open(TWITTER_JSON_PATH, 'r', encoding='utf-8') as f:
-        twitter_data = json.load(f)
+    try:
+        with open(TWITTER_JSON_PATH, 'r', encoding='utf-8') as f:
+            twitter_data = json.load(f)
+    except json.JSONDecodeError as e:
+        print(f"ERROR: Twitter JSON is corrupted: {e}")
+        return
+    except Exception as e:
+        print(f"ERROR: Failed to load Twitter JSON: {e}")
+        return
 
     db = load_master_db()
     if not db:
@@ -836,7 +850,8 @@ def process_subfolder(subfolder, db):
                 print(f"    [{source_info['date']}] +{added}: {author[:40]}")
 
         except Exception as e:
-            pass
+            stats['errors'] = stats.get('errors', 0) + 1
+            logger.warning(f"Failed to process email '{subject[:50]}...': {e}")
 
     return stats
 
@@ -987,8 +1002,15 @@ def process_with_tco_expansion():
         print(f"Twitter JSON not found: {TWITTER_JSON_PATH}")
         return
 
-    with open(TWITTER_JSON_PATH, 'r', encoding='utf-8') as f:
-        twitter_data = json.load(f)
+    try:
+        with open(TWITTER_JSON_PATH, 'r', encoding='utf-8') as f:
+            twitter_data = json.load(f)
+    except json.JSONDecodeError as e:
+        print(f"ERROR: Twitter JSON is corrupted: {e}")
+        return
+    except Exception as e:
+        print(f"ERROR: Failed to load Twitter JSON: {e}")
+        return
 
     db = load_master_db()
     if not db:
