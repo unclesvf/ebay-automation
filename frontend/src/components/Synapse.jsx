@@ -33,13 +33,14 @@ const Synapse = () => {
       const newValue = !dryRun;
       await api.setDryRun(newValue);
       setDryRun(newValue);
-      // Update local config object too
+      // Update local config object too (with null safety)
       setConfig(prev => ({
         ...prev,
-        global: { ...prev.global, dry_run: newValue }
+        global: { ...(prev?.global || {}), dry_run: newValue }
       }));
     } catch (e) {
-      alert("Failed to update settings");
+      console.error("Failed to update settings", e);
+      alert("Failed to update settings: " + (e.response?.data?.detail || e.message));
     } finally {
       setSaving(false);
     }

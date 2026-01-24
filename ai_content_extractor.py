@@ -110,7 +110,7 @@ def load_url_cache():
         try:
             with open(_cache_file, 'r', encoding='utf-8') as f:
                 _url_cache = json.load(f)
-        except:
+        except (json.JSONDecodeError, IOError, OSError):
             _url_cache = {}
     return _url_cache
 
@@ -197,7 +197,6 @@ def expand_all_tco_urls(text, verbose=False):
 
     return expanded
 
-    return expanded
 
 def parse_metric_value(value_str):
     """
@@ -221,8 +220,9 @@ def parse_metric_value(value_str):
         
     try:
         return int(float(value_str) * multiplier)
-    except:
+    except (ValueError, TypeError):
         return 0
+
 
 def extract_metrics(text):
     """
@@ -755,7 +755,8 @@ def process_subfolder(subfolder, db):
                 # Clean sender name (remove email address if present)
                 if ' <' in sender:
                     sender = sender.split(' <')[0].strip()
-            except:
+            except (AttributeError, TypeError, Exception) as e:
+                # COM object access can fail in various ways
                 sender = 'Unknown Sender'
 
             # Try to extract original author from email body (for forwarded emails)

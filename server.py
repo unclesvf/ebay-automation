@@ -21,8 +21,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://localhost:5174", "null"], # Vite Dev Server + static files
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],  # Only allow needed methods
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 # Paths
@@ -178,11 +178,13 @@ def search_transcripts(
                 'score': round(score, 3)
             })
 
-        # Get stats
+        # Get stats (with null safety)
         cursor.execute('SELECT COUNT(DISTINCT video_id) FROM transcript_fts')
-        total_videos = cursor.fetchone()[0]
+        result = cursor.fetchone()
+        total_videos = result[0] if result else 0
         cursor.execute('SELECT COUNT(*) FROM transcript_fts')
-        total_segments = cursor.fetchone()[0]
+        result = cursor.fetchone()
+        total_segments = result[0] if result else 0
 
         conn.close()
 
@@ -212,10 +214,12 @@ def search_stats():
         cursor = conn.cursor()
 
         cursor.execute('SELECT COUNT(*) FROM transcripts')
-        total_transcripts = cursor.fetchone()[0]
+        result = cursor.fetchone()
+        total_transcripts = result[0] if result else 0
 
         cursor.execute('SELECT COUNT(*) FROM transcript_fts')
-        total_segments = cursor.fetchone()[0]
+        result = cursor.fetchone()
+        total_segments = result[0] if result else 0
 
         cursor.execute('SELECT channel, COUNT(*) as count FROM transcripts GROUP BY channel ORDER BY count DESC')
         channels = [{'name': row[0], 'count': row[1]} for row in cursor.fetchall()]
@@ -242,10 +246,13 @@ def get_status():
     ollama_status = "Unknown"
     try:
         import requests
-        resp = requests.get("http://localhost:11434")
+        resp = requests.get("http://localhost:11434", timeout=2)
         if resp.status_code == 200:
             ollama_status = "Online"
-    except:
+    except (requests.RequestException, ConnectionError, TimeoutError):
+        ollama_status = "Offline"
+    except Exception as e:
+        logger.warning(f"Ollama check failed: {e}")
         ollama_status = "Offline"
 
     return {
@@ -267,23 +274,30 @@ def update_dry_run(update: ConfigUpdate):
     """Toggle dry_run in config."""
     try:
         with open(CONFIG_PATH, 'r') as f:
-            config = yaml.safe_load(f)
-        
+            config = yaml.safe_load(f) or {}
+
+        # Ensure structure exists
+        if 'global' not in config:
+            config['global'] = {}
+
         config['global']['dry_run'] = update.dry_run
-        
+
         with open(CONFIG_PATH, 'w') as f:
             yaml.dump(config, f)
-            
+
         return {"status": "updated", "dry_run": update.dry_run}
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Config file not found")
     except Exception as e:
+        logger.error(f"Config update failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/run")
-def run_orchestrator(background_tasks: BackgroundTasks):
-    """Trigger the orchestrator."""
+def run_orchestrator(background_tasks: BackgroundTasks, profile: str = "scott_organizer"):
+    """Trigger the orchestrator with optional profile."""
     global ORCHESTRATOR_PROCESS
     if ORCHESTRATOR_PROCESS is not None and ORCHESTRATOR_PROCESS.poll() is None:
-        return {"status": "already_running"}
+        return {"status": "already_running", "profile": profile}
     
     cmd = ["python", os.path.join(BASE_DIR, "run_orchestrator.py"), CONFIG_PATH]
     
@@ -333,28 +347,27 @@ def search_knowledge(query: str = "", limit: int = 20, threshold: float = 1.3):
                 n_results=limit,
                 include=["documents", "metadatas", "distances"]  # Include distance scores
             )
-            # Flatten results structure
-            documents = results['documents'][0]
-            metadatas = results['metadatas'][0]
-            ids = results['ids'][0]
-            distances = results.get('distances', [[]])[0]  # Lower = more similar
-            
+            # Safely extract results with null checks
+            documents = results.get('documents', [[]])[0] if results.get('documents') else []
+            metadatas = results.get('metadatas', [[]])[0] if results.get('metadatas') else []
+            ids = results.get('ids', [[]])[0] if results.get('ids') else []
+            distances = results.get('distances', [[]])[0] if results.get('distances') else []
+
             items = []
             # Distance threshold - filter out low-similarity results
             # ChromaDB uses L2 distance: 0 = exact match, higher = less similar
-            # Use the threshold parameter passed from frontend
             MAX_DISTANCE = threshold
-            
+
             for i in range(len(ids)):
                 # Only include results within similarity threshold
                 if distances and i < len(distances) and distances[i] > MAX_DISTANCE:
                     continue  # Skip irrelevant results
-                    
+
                 items.append({
-                    "id": ids[i],
-                    "content": documents[i],
-                    "metadata": metadatas[i],
-                    "distance": distances[i] if distances and i < len(distances) else None
+                    "id": ids[i] if i < len(ids) else None,
+                    "content": documents[i] if i < len(documents) else "",
+                    "metadata": metadatas[i] if i < len(metadatas) else {},
+                    "distance": distances[i] if i < len(distances) else None
                 })
             return {"items": items}
         else:
@@ -386,10 +399,21 @@ def get_insights(limit: int = 50, sort_by: str = "impact"):
         # Load master database
         master_db_path = r'D:\AI-Knowledge-Base\master_db.json'
         if not os.path.exists(master_db_path):
-            return {"items": [], "timeline": {}, "top_authors": []}
-        
-        with open(master_db_path, 'r', encoding='utf-8') as f:
-            db = json.load(f)
+            return {"items": [], "timeline": {}, "top_authors": [], "total_count": 0}
+
+        try:
+            with open(master_db_path, 'r', encoding='utf-8') as f:
+                db = json.load(f)
+        except json.JSONDecodeError as e:
+            logger.error(f"Corrupted master_db.json: {e}")
+            return {"items": [], "timeline": {}, "top_authors": [], "error": "Database file corrupted"}
+        except Exception as e:
+            logger.error(f"Failed to load master_db.json: {e}")
+            return {"items": [], "timeline": {}, "top_authors": [], "error": str(e)}
+
+        # Validate db structure
+        if not isinstance(db, dict):
+            return {"items": [], "timeline": {}, "top_authors": [], "error": "Invalid database format"}
         
         all_items = []
         author_scores = {}  # Track author contributions

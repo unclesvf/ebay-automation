@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../api';
 import { TrendingUp, Users, Calendar, ExternalLink, Copy, Star, Github, Youtube, Bookmark } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -6,26 +6,48 @@ import { motion, AnimatePresence } from 'framer-motion';
 const UniversalInsights = () => {
   const [insights, setInsights] = useState({ items: [], timeline: {}, top_authors: [], total_count: 0 });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [sortBy, setSortBy] = useState('impact');
   const [limit, setLimit] = useState(50);
   const [filterAuthor, setFilterAuthor] = useState(null);
-
-  const fetchInsights = async () => {
-    setLoading(true);
-    try {
-      const res = await api.getInsights(limit, sortBy);
-      if (res.data) {
-        setInsights(res.data);
-      }
-    } catch (e) {
-      console.error("Failed to fetch insights", e);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const requestIdRef = useRef(0);  // Track request ordering
 
   useEffect(() => {
+    let isMounted = true;
+    const currentRequestId = ++requestIdRef.current;
+
+    const fetchInsights = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await api.getInsights(limit, sortBy);
+        // Only update if this is the most recent request and component is mounted
+        if (isMounted && currentRequestId === requestIdRef.current) {
+          if (res.data && Array.isArray(res.data.items)) {
+            setInsights(res.data);
+          } else if (res.data?.error) {
+            setError(res.data.error);
+          } else {
+            setInsights({ items: [], timeline: {}, top_authors: [], total_count: 0 });
+          }
+        }
+      } catch (e) {
+        if (isMounted && currentRequestId === requestIdRef.current) {
+          console.error("Failed to fetch insights", e);
+          setError(e.message || "Failed to load insights");
+        }
+      } finally {
+        if (isMounted && currentRequestId === requestIdRef.current) {
+          setLoading(false);
+        }
+      }
+    };
+
     fetchInsights();
+
+    return () => {
+      isMounted = false;
+    };
   }, [sortBy, limit]);
 
   const getTypeIcon = (type) => {

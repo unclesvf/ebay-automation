@@ -1,44 +1,50 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { api } from '../api';
 import { Activity, Play, Terminal, Database, Youtube, FileText } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const Dashboard = () => {
-  const [status, setStatus] = useState({ orchestrator_running: false, model: 'Loading...' });
+  const [status, setStatus] = useState({ orchestrator_running: false, model: 'Loading...', ollama_status: 'Unknown' });
   const [logs, setLogs] = useState([]);
   const [isRunning, setIsRunning] = useState(false);
+  const [connectionError, setConnectionError] = useState(null);
   const logsEndRef = useRef(null);
 
-  const fetchStatus = async () => {
+  const fetchStatus = useCallback(async () => {
     try {
       const res = await api.getStatus();
-      setStatus(res.data);
-      setIsRunning(res.data.orchestrator_running);
+      setStatus(res.data || { orchestrator_running: false, model: 'Unknown' });
+      setIsRunning(res.data?.orchestrator_running || false);
+      setConnectionError(null);
     } catch (e) {
       console.error("Status fetch failed", e);
+      setConnectionError("Cannot connect to server");
+      setStatus({ orchestrator_running: false, model: 'Offline', ollama_status: 'Unknown' });
     }
-  };
+  }, []);
 
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     try {
       const res = await api.getLogs();
-      if (res.data.logs) {
+      if (res.data?.logs && Array.isArray(res.data.logs)) {
         setLogs(res.data.logs);
       }
     } catch (e) {
+      // Don't show error for logs - less critical
       console.error("Logs fetch failed", e);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchStatus();
     fetchLogs();
+    // Reduced polling from 2s to 5s to reduce network traffic
     const interval = setInterval(() => {
       fetchStatus();
       fetchLogs();
-    }, 2000); // Poll every 2s
+    }, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchStatus, fetchLogs]);
 
   useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });

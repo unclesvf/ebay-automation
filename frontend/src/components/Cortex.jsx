@@ -7,19 +7,26 @@ const Cortex = () => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [threshold, setThreshold] = useState(1.3);  // Distance threshold (lower = stricter)
 
   const performSearch = async (q) => {
     setLoading(true);
+    setError(null);
     try {
       const res = await api.searchKnowledge(q, threshold);
-      if (res.data.items) {
+      if (res.data?.items && Array.isArray(res.data.items)) {
         setResults(res.data.items);
+      } else if (res.data?.error) {
+        setError(res.data.error);
+        setResults([]);
       } else {
         setResults([]);
       }
     } catch (e) {
       console.error("Search failed", e);
+      setError(e.response?.data?.detail || e.message || "Search failed - server may be offline");
+      setResults([]);
     } finally {
       setLoading(false);
     }
@@ -186,7 +193,13 @@ const Cortex = () => {
           ))}
         </AnimatePresence>
         
-        {!loading && results.length === 0 && (
+        {error && (
+          <div className="error-state">
+            <p>{error}</p>
+          </div>
+        )}
+
+        {!loading && !error && results.length === 0 && (
           <div className="empty-state">
             <Database size={48} />
             <p>No knowledge patterns found.</p>
@@ -379,6 +392,16 @@ const Cortex = () => {
            padding: 4rem;
            color: var(--text-muted);
            opacity: 0.5;
+        }
+
+        .error-state {
+           grid-column: 1 / -1;
+           background: rgba(239, 68, 68, 0.1);
+           border: 1px solid rgba(239, 68, 68, 0.3);
+           color: #ef4444;
+           padding: 1rem 1.5rem;
+           border-radius: 8px;
+           text-align: center;
         }
       `}</style>
     </div>
