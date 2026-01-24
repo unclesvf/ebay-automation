@@ -226,7 +226,8 @@ def parse_metric_value(value_str):
 
 def extract_metrics(text):
     """
-    Extract engagement metrics and calculate impact score.
+    Extract engagement metrics, calculate impact score, and determine relevance tags.
+    Returns: (metrics dict, impact_score int, confidence float, relevance_tags list)
     """
     metrics = {
         'views': 0,
@@ -234,56 +235,105 @@ def extract_metrics(text):
         'reposts': 0,
         'saves': 0
     }
-    
+
     # Views/Impressions
     for match in METRIC_PATTERNS['views'].finditer(text):
         metrics['views'] = max(metrics['views'], parse_metric_value(match.group(1)))
     for match in METRIC_PATTERNS['impressions'].finditer(text):
         metrics['views'] = max(metrics['views'], parse_metric_value(match.group(1)))
-        
+
     # Likes
     for match in METRIC_PATTERNS['likes'].finditer(text):
         metrics['likes'] = max(metrics['likes'], parse_metric_value(match.group(1)))
-        
+
     # Reposts/Retweets
     for match in METRIC_PATTERNS['reposts'].finditer(text):
         metrics['reposts'] = max(metrics['reposts'], parse_metric_value(match.group(1)))
     for match in METRIC_PATTERNS['retweets'].finditer(text):
         metrics['reposts'] = max(metrics['reposts'], parse_metric_value(match.group(1)))
-        
+
     # Saves/Bookmarks
     for match in METRIC_PATTERNS['saves'].finditer(text):
         val = match.group(1) or match.group(2)
         metrics['saves'] = max(metrics['saves'], parse_metric_value(val))
-        
+
     # Calculate Impact Score
     # Formula: Views/1000 + Likes + Reposts*2 + Saves*2
     impact_score = (
-        (metrics['views'] / 1000) + 
-        metrics['likes'] + 
-        (metrics['reposts'] * 2) + 
+        (metrics['views'] / 1000) +
+        metrics['likes'] +
+        (metrics['reposts'] * 2) +
         (metrics['saves'] * 2)
     )
-    
-    # Baseline variability based on text keywords (if metrics are 0 or low)
-    # This helps surface "obviously important" items even without explicit stats
-    text_lower = text.lower()
-    if 'viral' in text_lower or 'breaking' in text_lower: impact_score += 5
-    if 'huge' in text_lower or 'incredible' in text_lower: impact_score += 3
-    if 'tutorial' in text_lower or 'guide' in text_lower: impact_score += 2
-    if 'release' in text_lower or 'launch' in text_lower: impact_score += 4
 
-    
-    # Baseline variability based on text keywords (if metrics are 0 or low)
-    # This helps surface "obviously important" items even without explicit stats
-    text_lower = text.lower()
-    if 'viral' in text_lower or 'breaking' in text_lower: impact_score += 5
-    if 'huge' in text_lower or 'incredible' in text_lower: impact_score += 3
-    if 'tutorial' in text_lower or 'guide' in text_lower: impact_score += 2
-    if 'release' in text_lower or 'launch' in text_lower: impact_score += 4
+    # =========================================================================
+    # CONFIDENCE SCORE (0.0 to 1.0)
+    # Based on source quality indicators
+    # =========================================================================
+    confidence = 0.5  # Default baseline
 
-    
-    return metrics, int(impact_score)
+    text_lower = text.lower()
+
+    # Increase confidence for verifiable sources
+    if any(url in text_lower for url in ['github.com', 'huggingface.co', 'youtube.com']):
+        confidence += 0.2  # Has direct link to authoritative source
+
+    # Increase for engagement signals (real metrics suggest real content)
+    if metrics['views'] > 1000 or metrics['likes'] > 100:
+        confidence += 0.15
+    if metrics['reposts'] > 50 or metrics['saves'] > 20:
+        confidence += 0.1
+
+    # Decrease for spam-like indicators
+    if text_lower.count('free') > 2 or 'click here' in text_lower:
+        confidence -= 0.2
+    if len(text) < 50:  # Very short text less reliable
+        confidence -= 0.1
+
+    # Clamp to 0.0-1.0 range
+    confidence = max(0.0, min(1.0, confidence))
+
+    # =========================================================================
+    # RELEVANCE TAGS
+    # Categorize content by topic for filtering
+    # =========================================================================
+    relevance_tags = []
+
+    # Content type tags
+    if 'tutorial' in text_lower or 'guide' in text_lower or 'how to' in text_lower:
+        relevance_tags.append('tutorial')
+        impact_score += 2
+    if 'release' in text_lower or 'launch' in text_lower or 'announced' in text_lower:
+        relevance_tags.append('release')
+        impact_score += 4
+    if 'viral' in text_lower or 'breaking' in text_lower:
+        relevance_tags.append('trending')
+        impact_score += 5
+    if 'open source' in text_lower or 'oss' in text_lower:
+        relevance_tags.append('open-source')
+        impact_score += 2
+
+    # Technology domain tags
+    if any(model in text_lower for model in ['flux', 'sdxl', 'stable diffusion', 'midjourney', 'dall-e']):
+        relevance_tags.append('image-gen')
+    if any(model in text_lower for model in ['claude', 'gpt', 'gemini', 'llama', 'mistral']):
+        relevance_tags.append('llm')
+    if any(tool in text_lower for tool in ['cursor', 'windsurf', 'cline', 'aider', 'claude code']):
+        relevance_tags.append('coding-tool')
+    if any(model in text_lower for model in ['sora', 'runway', 'pika', 'kling', 'luma']):
+        relevance_tags.append('video-gen')
+    if any(model in text_lower for model in ['kokoro', 'bark', 'elevenlabs', 'xtts']):
+        relevance_tags.append('tts')
+    if 'agent' in text_lower or 'mcp' in text_lower or 'tool use' in text_lower:
+        relevance_tags.append('agents')
+    if 'prompt' in text_lower:
+        relevance_tags.append('prompting')
+
+    # Quality indicators
+    if 'huge' in text_lower or 'incredible' in text_lower or 'amazing' in text_lower:
+        impact_score += 3
+
+    return metrics, int(impact_score), round(confidence, 2), relevance_tags
 
 # =============================================================================
 # EXTRACTION FUNCTIONS
@@ -514,14 +564,16 @@ def extract_all_from_text(text, source_info=None, expand_tco=False, verbose=Fals
             seen_yt.add(v['video_id'])
             unique_yt.append(v)
 
-    
-    # Extract metrics
-    metrics, impact_score = extract_metrics(text)
-    
+
+    # Extract metrics, confidence, and relevance tags
+    metrics, impact_score, confidence, relevance_tags = extract_metrics(text)
+
     # Enrich source info if provided
     if source_info:
         source_info['metrics'] = metrics
         source_info['impact_score'] = impact_score
+        source_info['confidence'] = confidence
+        source_info['relevance_tags'] = relevance_tags
 
     result = {
         'github_repos': unique_github,
@@ -530,7 +582,9 @@ def extract_all_from_text(text, source_info=None, expand_tco=False, verbose=Fals
         'style_codes': extract_style_codes(text),
         'models_detected': detect_models(text),
         'expanded_urls': expanded_urls,
-        'source': source_info
+        'source': source_info,
+        'confidence': confidence,
+        'relevance_tags': relevance_tags
     }
     return result
 

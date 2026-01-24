@@ -339,6 +339,105 @@ HTML_HEAD = """<!DOCTYPE html>
         .back-to-top:hover {{
             background: var(--accent-hover);
         }}
+
+        /* Collapsible Deep Dive sections */
+        details {{
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin: 1rem 0;
+            padding: 0;
+        }}
+
+        details summary {{
+            padding: 1rem;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--accent);
+            list-style: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }}
+
+        details summary::-webkit-details-marker {{
+            display: none;
+        }}
+
+        details summary::before {{
+            content: '▶';
+            font-size: 0.8rem;
+            transition: transform 0.2s;
+        }}
+
+        details[open] summary::before {{
+            transform: rotate(90deg);
+        }}
+
+        details .deep-dive-content {{
+            padding: 0 1rem 1rem 1rem;
+            border-top: 1px solid var(--border);
+        }}
+
+        /* Mermaid diagram container */
+        .mermaid-container {{
+            background: var(--bg-primary);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            overflow-x: auto;
+        }}
+
+        .mermaid {{
+            text-align: center;
+        }}
+
+        /* Timestamp link styling */
+        .timestamp-link {{
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            background: var(--accent);
+            color: white;
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            text-decoration: none;
+            transition: background 0.2s;
+        }}
+
+        .timestamp-link:hover {{
+            background: var(--accent-hover);
+            color: white;
+        }}
+
+        /* Workflow step styling */
+        .workflow-step {{
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            margin: 0.75rem 0;
+            padding: 0.5rem;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.02);
+        }}
+
+        .step-number {{
+            background: var(--accent);
+            color: white;
+            min-width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.85rem;
+        }}
+
+        .step-content {{
+            flex: 1;
+        }}
     </style>
 </head>
 <body>
@@ -363,7 +462,23 @@ HTML_FOOTER = """
         <footer>
             Generated on {date} | AI Knowledge Base
         </footer>
+        <!-- Mermaid.js for workflow diagrams -->
+        <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
         <script>
+            // Initialize Mermaid with dark theme
+            mermaid.initialize({{
+                startOnLoad: true,
+                theme: 'dark',
+                themeVariables: {{
+                    primaryColor: '#e94560',
+                    primaryTextColor: '#eaeaea',
+                    primaryBorderColor: '#4da8da',
+                    lineColor: '#4da8da',
+                    secondaryColor: '#16213e',
+                    tertiaryColor: '#0f3460'
+                }}
+            }});
+
             // Back to top capability
             window.addEventListener('scroll', () => {{
                 const btn = document.getElementById('backToTop');
@@ -479,6 +594,71 @@ def format_source(source):
         parts.append(f"({source['type']})")
 
     return " | ".join(parts) if parts else "Unknown source"
+
+def timestamp_to_seconds(timestamp):
+    """Convert timestamp string (e.g., '5:30' or '1:23:45') to seconds."""
+    if not timestamp:
+        return 0
+
+    # Clean the timestamp - remove non-numeric/colon characters
+    timestamp = ''.join(c for c in str(timestamp) if c.isdigit() or c == ':')
+    if not timestamp:
+        return 0
+
+    parts = timestamp.split(':')
+    try:
+        if len(parts) == 3:  # H:M:S
+            return int(parts[0]) * 3600 + int(parts[1]) * 60 + int(parts[2])
+        elif len(parts) == 2:  # M:S
+            return int(parts[0]) * 60 + int(parts[1])
+        elif len(parts) == 1:  # Just seconds
+            return int(parts[0])
+    except (ValueError, IndexError):
+        return 0
+    return 0
+
+def make_timestamped_url(video_id, timestamp):
+    """Create a YouTube URL with timestamp parameter."""
+    if not video_id:
+        return '#'
+
+    base_url = f"https://youtube.com/watch?v={video_id}"
+
+    if timestamp:
+        seconds = timestamp_to_seconds(timestamp)
+        if seconds > 0:
+            return f"{base_url}&t={seconds}s"
+
+    return base_url
+
+def generate_mermaid_workflow(steps):
+    """Generate a Mermaid flowchart from workflow steps."""
+    if not steps or len(steps) < 2:
+        return None
+
+    # Limit to first 8 steps to keep diagram readable
+    display_steps = steps[:8]
+
+    lines = ['graph TD']
+    for i, step in enumerate(display_steps):
+        # Sanitize step text for Mermaid (remove special chars, limit length)
+        safe_text = step.replace('"', "'").replace('\n', ' ')[:50]
+        if len(step) > 50:
+            safe_text += '...'
+
+        node_id = f"S{i+1}"
+        lines.append(f'    {node_id}["{i+1}. {safe_text}"]')
+
+        if i > 0:
+            prev_id = f"S{i}"
+            lines.append(f'    {prev_id} --> {node_id}')
+
+    # Add styling
+    lines.append('    style S1 fill:#e94560,color:#fff')
+    if len(display_steps) > 1:
+        lines.append(f'    style S{len(display_steps)} fill:#4ade80,color:#000')
+
+    return '\n'.join(lines)
 
 # =============================================================================
 # REPORT GENERATORS
@@ -1129,16 +1309,25 @@ def generate_tips_by_topic_report(extracted_data):
             video_id = tip.get('source_video', '')
             video_title = tip.get('source_title', 'Unknown')
             timestamp = tip.get('timestamp_approx', '')
-            video_url = f"https://youtube.com/watch?v={video_id}" if video_id else '#'
+
+            # Create timestamped URL for direct jump to video moment
+            video_url = make_timestamped_url(video_id, timestamp)
+
+            # Timestamp link that jumps directly to that moment
+            timestamp_html = ''
+            if timestamp and video_id:
+                timestamp_html = f'<a href="{video_url}" target="_blank" class="timestamp-link">⏱️ {timestamp}</a>'
+            elif timestamp:
+                timestamp_html = f'<span class="tag">~{timestamp}</span>'
 
             html += f"""
                 <div class="card">
                     <p style="margin-bottom: 1rem;">{tip.get('text', '')}</p>
                     <div class="card-meta">
-                        {f'<span class="tag">~{timestamp}</span>' if timestamp else ''}
+                        {timestamp_html}
                     </div>
                     <div class="card-source">
-                        <a href="{video_url}" target="_blank">{video_title}</a>
+                        <a href="{make_timestamped_url(video_id, None)}" target="_blank">{video_title}</a>
                     </div>
                 </div>
             """
@@ -1228,6 +1417,11 @@ def generate_workflows_report(extracted_data):
             video_id = workflow.get('source_video', '')
             video_title = workflow.get('source_title', 'Unknown')
             video_url = f"https://youtube.com/watch?v={video_id}" if video_id else '#'
+            steps = workflow.get('steps', [])
+            prereqs = workflow.get('prerequisites', [])
+
+            # Determine if this is a complex workflow (many steps/prereqs)
+            is_complex = len(steps) >= 5 or len(prereqs) >= 3
 
             html += f"""
                 <div class="card" style="margin-bottom: 1.5rem;">
@@ -1236,27 +1430,58 @@ def generate_workflows_report(extracted_data):
                     </div>
             """
 
+            # Generate Mermaid diagram for workflows with multiple steps
+            mermaid_code = generate_mermaid_workflow(steps)
+            if mermaid_code and len(steps) >= 3:
+                html += f"""
+                    <div class="mermaid-container">
+                        <div class="mermaid">
+{mermaid_code}
+                        </div>
+                    </div>
+                """
+
+            # For complex workflows, use collapsible Deep Dive section
+            if is_complex:
+                html += """
+                    <details>
+                        <summary>🔍 Deep Dive - Full Details</summary>
+                        <div class="deep-dive-content">
+                """
+
             # Prerequisites
-            if workflow.get('prerequisites'):
+            if prereqs:
                 html += """
                     <div style="margin: 1rem 0;">
-                        <strong>Prerequisites:</strong>
+                        <strong>📋 Prerequisites:</strong>
                         <ul style="margin-top: 0.5rem; padding-left: 1.5rem;">
                 """
-                for prereq in workflow['prerequisites']:
+                for prereq in prereqs:
                     html += f"<li>{prereq}</li>"
                 html += "</ul></div>"
 
-            # Steps
-            if workflow.get('steps'):
+            # Steps with enhanced styling
+            if steps:
                 html += """
                     <div style="margin: 1rem 0;">
-                        <strong>Steps:</strong>
-                        <ol style="margin-top: 0.5rem; padding-left: 1.5rem;">
+                        <strong>📝 Steps:</strong>
+                        <div style="margin-top: 0.5rem;">
                 """
-                for step in workflow['steps']:
-                    html += f"<li style='margin: 0.5rem 0;'>{step}</li>"
-                html += "</ol></div>"
+                for i, step in enumerate(steps, 1):
+                    html += f"""
+                        <div class="workflow-step">
+                            <span class="step-number">{i}</span>
+                            <span class="step-content">{step}</span>
+                        </div>
+                    """
+                html += "</div></div>"
+
+            # Close Deep Dive section if complex
+            if is_complex:
+                html += """
+                        </div>
+                    </details>
+                """
 
             html += f"""
                     <div class="card-source">

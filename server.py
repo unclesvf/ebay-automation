@@ -189,6 +189,109 @@ def search_knowledge(query: str = "", limit: int = 20, threshold: float = 1.3):
     except Exception as e:
         return {"error": str(e)}
 
+@app.get("/insights")
+def get_insights(limit: int = 50, sort_by: str = "impact"):
+    """
+    Get unified insights across all sources, sorted by impact score.
+    Returns: { items: [...], timeline: {...}, top_authors: [...] }
+    """
+    try:
+        # Load master database
+        master_db_path = r'D:\AI-Knowledge-Base\master_db.json'
+        if not os.path.exists(master_db_path):
+            return {"items": [], "timeline": {}, "top_authors": []}
+        
+        with open(master_db_path, 'r', encoding='utf-8') as f:
+            db = json.load(f)
+        
+        all_items = []
+        author_scores = {}  # Track author contributions
+        timeline_data = {}  # Track items by date
+        
+        def add_items(source_list, item_type, icon):
+            for item in source_list:
+                source = item.get('source', {})
+                metrics = source.get('metrics', {})
+                impact = source.get('impact_score', 0)
+                date_found = item.get('date_found', '')
+                author = source.get('author') or source.get('sender') or 'Unknown'
+                
+                # Boost recent items with no impact score
+                if impact == 0 and date_found:
+                    from datetime import datetime
+                    try:
+                        if date_found == datetime.now().strftime('%Y-%m-%d'):
+                            impact = 10
+                    except:
+                        pass
+                
+                entry = {
+                    'id': item.get('url') or item.get('video_id') or item.get('code', ''),
+                    'title': item.get('name') or item.get('title') or item.get('code') or 'Unknown',
+                    'url': item.get('url') or '',
+                    'type': item_type,
+                    'icon': icon,
+                    'impact': impact,
+                    'metrics': metrics,
+                    'date': date_found,
+                    'author': author,
+                    'owner': item.get('owner', ''),
+                    'confidence': source.get('confidence', 0.5),
+                    'relevance_tags': source.get('relevance_tags', [])
+                }
+                all_items.append(entry)
+                
+                # Track author contributions
+                if author not in author_scores:
+                    author_scores[author] = {'count': 0, 'total_impact': 0}
+                author_scores[author]['count'] += 1
+                author_scores[author]['total_impact'] += impact
+                
+                # Track timeline
+                if date_found:
+                    if date_found not in timeline_data:
+                        timeline_data[date_found] = {'count': 0, 'items': []}
+                    timeline_data[date_found]['count'] += 1
+                    if len(timeline_data[date_found]['items']) < 3:
+                        timeline_data[date_found]['items'].append(entry['title'][:50])
+        
+        # Process all sources
+        add_items(db.get('repositories', {}).get('github', []), 'GitHub', 'github')
+        add_items(db.get('repositories', {}).get('huggingface', []), 'HuggingFace', 'huggingface')
+        add_items(db.get('tutorials', []), 'Tutorial', 'youtube')
+        add_items(db.get('styles', {}).get('midjourney_sref', []), 'Style', 'sref')
+        add_items(db.get('coding_tools', []), 'Tool', 'tool')
+        
+        # Sort by impact or date
+        if sort_by == 'date':
+            all_items.sort(key=lambda x: x['date'], reverse=True)
+        else:
+            all_items.sort(key=lambda x: x['impact'], reverse=True)
+        
+        # Limit results
+        top_items = all_items[:limit]
+        
+        # Build top authors list
+        top_authors = [
+            {'author': author, 'count': data['count'], 'impact': data['total_impact']}
+            for author, data in author_scores.items()
+        ]
+        top_authors.sort(key=lambda x: x['impact'], reverse=True)
+        top_authors = top_authors[:10]  # Top 10 authors
+        
+        # Sort timeline by date
+        sorted_timeline = dict(sorted(timeline_data.items(), reverse=True)[:14])  # Last 14 days
+        
+        return {
+            "items": top_items,
+            "timeline": sorted_timeline,
+            "top_authors": top_authors,
+            "total_count": len(all_items)
+        }
+        
+    except Exception as e:
+        return {"error": str(e), "items": [], "timeline": {}, "top_authors": []}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
