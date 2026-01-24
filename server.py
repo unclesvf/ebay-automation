@@ -61,6 +61,7 @@ def list_reports():
         'styles.html': {'name': 'Style Codes', 'description': 'Midjourney --sref codes', 'icon': '🎨'},
         'search.html': {'name': 'Search', 'description': 'Search across transcripts', 'icon': '🔍'},
         'url_cache.html': {'name': 'URL Cache', 'description': 'Expanded t.co links', 'icon': '🔗'},
+        'models_report.html': {'name': 'AI Models', 'description': 'Tracked AI models and tools', 'icon': '🤖'},
     }
 
     if os.path.exists(EXPORTS_PATH):
