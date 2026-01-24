@@ -39,7 +39,7 @@ except ImportError:
 
 # LLM Backend setting
 LLM_BACKEND = 'ollama'  # 'ollama' or 'claude'
-OLLAMA_MODEL = 'qwen2.5:32b'
+OLLAMA_MODEL = 'qwen2.5:14b'  # 14B fits entirely in 24GB VRAM, much faster
 OLLAMA_URL = 'http://localhost:11434/api/generate'
 
 # Paths
@@ -266,7 +266,7 @@ def extract_with_ollama(chunk, video_title, channel, segment_num, total_segments
                     'num_predict': 2000
                 }
             },
-            timeout=120  # 2 minute timeout per chunk
+            timeout=300  # 5 minute timeout per chunk (QWEN 32B is slow)
         )
         response.raise_for_status()
 
