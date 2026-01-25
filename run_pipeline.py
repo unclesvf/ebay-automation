@@ -103,7 +103,7 @@ STAGES = [
         description='LLM knowledge extraction (Ollama/QWEN)',
         default_enabled=True,
         requires_api_key=False,
-        timeout=3600  # 60 minutes - local LLM is slower but free
+        timeout=14400  # 4 hours - local LLM processes many videos with many chunks
     ),
     Stage(
         id='reports',

@@ -37,10 +37,33 @@ try:
 except ImportError:
     HAS_OLLAMA = False
 
-# LLM Backend setting
-LLM_BACKEND = 'ollama'  # 'ollama' or 'claude'
-OLLAMA_MODEL = 'qwen2.5:14b'  # 14B fits entirely in 24GB VRAM, much faster
+try:
+    from groq import Groq
+    HAS_GROQ = True
+except ImportError:
+    HAS_GROQ = False
+
+try:
+    from openai import OpenAI
+    HAS_OPENAI = True
+except ImportError:
+    HAS_OPENAI = False
+
+# LLM Backend setting - options: 'ollama', 'claude', 'groq', 'vllm'
+# Ollama is stable and has built-in timeout handling
+# vLLM is fast but can hang without proper timeouts
+# Groq is 10-20x faster than Ollama (uses custom LPU hardware)
+LLM_BACKEND = 'ollama'  # Options: 'ollama', 'claude', 'groq', 'vllm'
+OLLAMA_MODEL = 'qwen2.5:14b'  # 14B fits entirely in 24GB VRAM
 OLLAMA_URL = 'http://localhost:11434/api/generate'
+
+# vLLM settings (runs in WSL2 on localhost:8000)
+VLLM_URL = 'http://localhost:8000/v1'  # OpenAI-compatible API
+VLLM_MODEL = 'Qwen/Qwen2.5-7B-Instruct'  # 7B for faster inference
+
+# Groq settings (get free API key at https://console.groq.com/)
+GROQ_API_KEY = os.environ.get('GROQ_API_KEY', '')  # Set in environment or here
+GROQ_MODEL = 'llama-3.3-70b-versatile'  # Fast, high quality
 
 # Paths
 KNOWLEDGE_BASE = Path(r"D:\AI-Knowledge-Base")
@@ -61,6 +84,42 @@ SESSION_TOKENS = {
 CHUNK_SIZE = 3000  # Characters per chunk (roughly 750 tokens)
 CHUNK_OVERLAP = 200  # Overlap between chunks for context
 
+# =============================================================================
+# FABRICATION CONTEXT - Scott's Shop Capabilities
+# =============================================================================
+# This context helps the LLM identify cross-domain applications connecting
+# digital techniques to physical fabrication capabilities.
+
+FABRICATION_CONTEXT = """
+FABRICATION CAPABILITIES (for cross-domain connection analysis):
+
+PRECISION MACHINING:
+- Fadal VMC4020: CNC machining center for ferrous/non-ferrous metals, high precision parts
+
+LARGE FORMAT CNC:
+- ShopBot PRS Alpha: 5'x8' bed, 5HP Colombo spindle
+  - Materials: wood, plastics, non-ferrous metals
+  - Applications: furniture, cabinets, 3D sculpting, architectural elements, signs
+  - Future: rotary axis for spindles, bed posts, columns, totem poles
+
+LASER SYSTEMS:
+- 100W Mopa Fiber Laser: metal engraving, marking, annealing, deep engraving
+- 55W CO2 Laser: cutting/engraving wood, acrylic, leather, paper
+
+ADDITIVE:
+- 3D Printers: prototyping, small parts, models
+
+TRADITIONAL:
+- Full machine shop, wood shop, electronics shop
+
+KEY FABRICATION WORKFLOWS TO IDENTIFY:
+- 3D capture/scanning → STL/OBJ → CNC machining or 3D printing
+- Image/video → depth map → laser engraving or CNC relief carving
+- AI generation → physical reproduction
+- Reverse engineering → CAD/CAM → fabrication
+- Scale transformations (small scan → large carving, or vice versa)
+"""
+
 # Extraction prompt template
 EXTRACTION_PROMPT = """Analyze this transcript segment from an AI tutorial video and extract structured knowledge.
 
@@ -71,6 +130,8 @@ SEGMENT: {segment_num} of {total_segments}
 TRANSCRIPT:
 {transcript_chunk}
 
+---
+""" + FABRICATION_CONTEXT + """
 ---
 
 Extract the following in JSON format:
@@ -92,6 +153,12 @@ Extract the following in JSON format:
 4. **insights**: Key insights or non-obvious observations about AI tools/techniques.
 
 5. **tools_mentioned**: Specific tools, services, or technologies mentioned with context.
+
+6. **fabrication_applications**: Cross-domain connections to physical fabrication. Think creatively about how this technique could connect to CNC machining, laser engraving, 3D printing, woodworking, or metalworking. Consider:
+   - Output formats (STL, OBJ, depth maps, G-code, images)
+   - Input methods (3D scanning, video capture, AI generation)
+   - Scale transformations (small to large or vice versa)
+   - Material possibilities
 
 Respond ONLY with valid JSON in this exact format:
 {{
@@ -126,10 +193,19 @@ Respond ONLY with valid JSON in this exact format:
       "name": "Claude Code",
       "context": "Main tool for AI-assisted coding"
     }}
+  ],
+  "fabrication_applications": [
+    {{
+      "technique": "Video-to-3D capture",
+      "outputs": ["3D mesh", "STL", "OBJ"],
+      "potential_uses": ["CNC carving of captured objects", "3D printing replicas", "Laser depth engraving"],
+      "materials": ["wood", "metal", "plastic"],
+      "notes": "Metrically accurate capture enables precise reproduction at any scale"
+    }}
   ]
 }}
 
-If a category has no items, use an empty array []. Ensure valid JSON output."""
+If a category has no items, use an empty array []. For fabrication_applications, think creatively about non-obvious connections - even if the video doesn't explicitly mention fabrication, consider how the technique COULD connect to physical making. Ensure valid JSON output."""
 
 
 def load_token_usage():
@@ -349,10 +425,113 @@ def extract_with_claude(chunk, video_title, channel, segment_num, total_segments
         return None
 
 
+def extract_with_groq(chunk, video_title, channel, segment_num, total_segments):
+    """Use Groq API for ultra-fast extraction (10-20x faster than Ollama)."""
+    if not HAS_GROQ:
+        print("ERROR: groq package not installed. Run: pip install groq")
+        return None
+
+    api_key = GROQ_API_KEY or os.environ.get('GROQ_API_KEY')
+    if not api_key:
+        print("ERROR: GROQ_API_KEY not set. Get free key at https://console.groq.com/")
+        return None
+
+    client = Groq(api_key=api_key)
+
+    prompt = EXTRACTION_PROMPT.format(
+        video_title=video_title,
+        channel=channel,
+        segment_num=segment_num,
+        total_segments=total_segments,
+        transcript_chunk=chunk
+    )
+
+    try:
+        completion = client.chat.completions.create(
+            model=GROQ_MODEL,
+            messages=[
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.3,
+            max_tokens=2000
+        )
+
+        response_text = completion.choices[0].message.content
+
+        # Parse JSON from response
+        json_match = re.search(r'\{[\s\S]*\}', response_text)
+        if json_match:
+            return json.loads(json_match.group())
+        else:
+            print(f"  Warning: Could not parse JSON from response")
+            return None
+
+    except json.JSONDecodeError as e:
+        print(f"  Warning: JSON parse error: {e}")
+        return None
+    except Exception as e:
+        print(f"  Error calling Groq API: {e}")
+        return None
+
+
+def extract_with_vllm(chunk, video_title, channel, segment_num, total_segments):
+    """Use vLLM (local, runs in WSL2) for fast extraction via OpenAI-compatible API."""
+    if not HAS_OPENAI:
+        print("ERROR: openai package not installed. Run: pip install openai")
+        return None
+
+    # Connect to local vLLM server (running in WSL2) with timeout
+    client = OpenAI(
+        base_url=VLLM_URL,
+        api_key="not-needed",  # vLLM doesn't require API key
+        timeout=300.0  # 5 minute timeout per request
+    )
+
+    prompt = EXTRACTION_PROMPT.format(
+        video_title=video_title,
+        channel=channel,
+        segment_num=segment_num,
+        total_segments=total_segments,
+        transcript_chunk=chunk
+    )
+
+    try:
+        completion = client.chat.completions.create(
+            model=VLLM_MODEL,
+            messages=[
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.3,
+            max_tokens=2000,
+            timeout=300  # 5 minute timeout
+        )
+
+        response_text = completion.choices[0].message.content
+
+        # Parse JSON from response
+        json_match = re.search(r'\{[\s\S]*\}', response_text)
+        if json_match:
+            return json.loads(json_match.group())
+        else:
+            print(f"  Warning: Could not parse JSON from response")
+            return None
+
+    except json.JSONDecodeError as e:
+        print(f"  Warning: JSON parse error: {e}")
+        return None
+    except Exception as e:
+        print(f"  Error calling vLLM API: {e}")
+        return None
+
+
 def extract_knowledge(chunk, video_title, channel, segment_num, total_segments):
-    """Extract knowledge using configured backend (Ollama or Claude)."""
+    """Extract knowledge using configured backend (Ollama, Claude, Groq, or vLLM)."""
     if LLM_BACKEND == 'ollama':
         return extract_with_ollama(chunk, video_title, channel, segment_num, total_segments)
+    elif LLM_BACKEND == 'groq':
+        return extract_with_groq(chunk, video_title, channel, segment_num, total_segments)
+    elif LLM_BACKEND == 'vllm':
+        return extract_with_vllm(chunk, video_title, channel, segment_num, total_segments)
     else:
         return extract_with_claude(chunk, video_title, channel, segment_num, total_segments)
 
@@ -364,7 +543,8 @@ def merge_extractions(extractions):
         'workflows': [],
         'prompts': [],
         'insights': [],
-        'tools_mentioned': []
+        'tools_mentioned': [],
+        'fabrication_applications': []
     }
 
     seen_tips = set()
@@ -372,6 +552,7 @@ def merge_extractions(extractions):
     seen_prompts = set()
     seen_insights = set()
     seen_tools = set()
+    seen_fabrication = set()
 
     for extraction in extractions:
         if not extraction:
@@ -411,6 +592,13 @@ def merge_extractions(extractions):
             if tool_key and tool_key not in seen_tools:
                 seen_tools.add(tool_key)
                 merged['tools_mentioned'].append(tool)
+
+        # Merge fabrication applications (dedupe by technique name)
+        for fab in extraction.get('fabrication_applications', []):
+            fab_key = fab.get('technique', '').lower()
+            if fab_key and fab_key not in seen_fabrication:
+                seen_fabrication.add(fab_key)
+                merged['fabrication_applications'].append(fab)
 
     return merged
 
@@ -508,6 +696,7 @@ def process_transcript(video_id, force=False, dry_run=False):
     print(f"    Prompts: {len(merged['prompts'])}")
     print(f"    Insights: {len(merged['insights'])}")
     print(f"    Tools: {len(merged['tools_mentioned'])}")
+    print(f"    Fabrication Apps: {len(merged['fabrication_applications'])}")
     print(f"  Saved to: {extraction_file}")
 
     # Update database
@@ -515,6 +704,7 @@ def process_transcript(video_id, force=False, dry_run=False):
     video_info['llm_extraction_date'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     video_info['llm_tips_count'] = len(merged['tips'])
     video_info['llm_workflows_count'] = len(merged['workflows'])
+    video_info['llm_fabrication_count'] = len(merged['fabrication_applications'])
     save_database(db)
 
     return merged
@@ -573,6 +763,7 @@ def aggregate_all_knowledge():
     all_workflows = []
     all_prompts = []
     all_insights = []
+    all_fabrication = []
 
     # Load all extraction files
     for extraction_file in EXTRACTED_DIR.glob("*_knowledge.json"):
@@ -602,6 +793,11 @@ def aggregate_all_knowledge():
             insight['source_video'] = video_id
             insight['source_title'] = video_title
             all_insights.append(insight)
+
+        for fab in data.get('fabrication_applications', []):
+            fab['source_video'] = video_id
+            fab['source_title'] = video_title
+            all_fabrication.append(fab)
 
     # Save aggregated files
     EXTRACTED_DIR.mkdir(parents=True, exist_ok=True)
@@ -634,17 +830,27 @@ def aggregate_all_knowledge():
             'insights': all_insights
         }, f, indent=2)
 
+    with open(EXTRACTED_DIR / 'all_fabrication.json', 'w', encoding='utf-8') as f:
+        json.dump({
+            'extracted_at': datetime.now().isoformat(),
+            'total': len(all_fabrication),
+            'fabrication_context': FABRICATION_CONTEXT,
+            'applications': all_fabrication
+        }, f, indent=2)
+
     print(f"Aggregated knowledge saved:")
     print(f"  Tips: {len(all_tips)} -> all_tips.json")
     print(f"  Workflows: {len(all_workflows)} -> all_workflows.json")
     print(f"  Prompts: {len(all_prompts)} -> all_prompts.json")
     print(f"  Insights: {len(all_insights)} -> all_insights.json")
+    print(f"  Fabrication: {len(all_fabrication)} -> all_fabrication.json")
 
     return {
         'tips': len(all_tips),
         'workflows': len(all_workflows),
         'prompts': len(all_prompts),
-        'insights': len(all_insights)
+        'insights': len(all_insights),
+        'fabrication': len(all_fabrication)
     }
 
 
@@ -910,6 +1116,25 @@ Requirements:
                     print("ERROR: Ollama is not running at localhost:11434")
                     print("Start Ollama first: ollama serve")
                     sys.exit(1)
+            elif LLM_BACKEND == 'vllm':
+                # Check if vLLM is running
+                try:
+                    resp = ollama_requests.get(f'{VLLM_URL}/models', timeout=5)
+                    print(f"Using vLLM with model: {VLLM_MODEL}")
+                except Exception:
+                    print(f"ERROR: vLLM is not running at {VLLM_URL}")
+                    print("Start vLLM in WSL2: vllm serve Qwen/Qwen2.5-7B-Instruct --port 8000")
+                    sys.exit(1)
+            elif LLM_BACKEND == 'groq':
+                if not HAS_GROQ:
+                    print("ERROR: groq package not installed")
+                    print("Run: pip install groq")
+                    sys.exit(1)
+                if not GROQ_API_KEY and not os.environ.get('GROQ_API_KEY'):
+                    print("ERROR: GROQ_API_KEY not provided")
+                    print("Get free key at https://console.groq.com/")
+                    sys.exit(1)
+                print(f"Using Groq with model: {GROQ_MODEL}")
             else:
                 if not HAS_ANTHROPIC:
                     print("ERROR: anthropic package not installed")
