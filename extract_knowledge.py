@@ -50,10 +50,9 @@ except ImportError:
     HAS_OPENAI = False
 
 # LLM Backend setting - options: 'ollama', 'claude', 'groq', 'vllm'
-# Ollama is stable and has built-in timeout handling
-# vLLM is fast but can hang without proper timeouts
+# vLLM is fast local inference (runs in WSL2, ~3-5x faster than Ollama)
 # Groq is 10-20x faster than Ollama (uses custom LPU hardware)
-LLM_BACKEND = 'ollama'  # Options: 'ollama', 'claude', 'groq', 'vllm'
+LLM_BACKEND = 'vllm'  # Options: 'ollama', 'claude', 'groq', 'vllm'
 OLLAMA_MODEL = 'qwen2.5:14b'  # 14B fits entirely in 24GB VRAM
 OLLAMA_URL = 'http://localhost:11434/api/generate'
 
