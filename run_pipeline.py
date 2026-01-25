@@ -60,18 +60,20 @@ class StageResult:
 
 
 # Pipeline stages in execution order
+# NOTE: Extract runs BEFORE organize to capture URLs from new emails
+# before they get moved to subfolders
 STAGES = [
-    Stage(
-        id='organize',
-        script='scott_folder_organizer.py',
-        description='Organize Outlook emails, extract X-Twitter posts',
-        default_enabled=True
-    ),
     Stage(
         id='extract',
         script='ai_content_extractor.py',
-        description='Extract GitHub/HuggingFace/YouTube URLs from emails',
+        description='Extract URLs from emails (main folder + subfolders)',
         args=['--all'],
+        default_enabled=True
+    ),
+    Stage(
+        id='organize',
+        script='scott_folder_organizer.py',
+        description='Organize Outlook emails into subfolders',
         default_enabled=True
     ),
     Stage(

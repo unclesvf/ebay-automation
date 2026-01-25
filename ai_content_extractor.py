@@ -433,20 +433,25 @@ def extract_huggingface_refs(text):
 def extract_youtube_urls(text):
     """
     Extract YouTube URLs and attempt to find titles in surrounding text.
+    YouTube video IDs are always exactly 11 characters.
     """
     videos = []
-    
+
     # Simple line-based title extraction
     lines = text.split('\n')
     for i, line in enumerate(lines):
         found_in_line = []
         # Full URLs
         for match in PATTERNS['youtube_full'].finditer(line):
-            found_in_line.append({'id': match.group(1), 'url': f"https://www.youtube.com/watch?v={match.group(1)}"})
+            video_id = match.group(1)[:11]  # YouTube IDs are exactly 11 chars
+            if len(video_id) == 11:  # Only accept valid-length IDs
+                found_in_line.append({'id': video_id, 'url': f"https://www.youtube.com/watch?v={video_id}"})
         # Short URLs
         for match in PATTERNS['youtube_short'].finditer(line):
-            found_in_line.append({'id': match.group(1), 'url': f"https://youtu.be/{match.group(1)}"})
-            
+            video_id = match.group(1)[:11]  # YouTube IDs are exactly 11 chars
+            if len(video_id) == 11:  # Only accept valid-length IDs
+                found_in_line.append({'id': video_id, 'url': f"https://youtu.be/{video_id}"})
+
         for v in found_in_line:
             # Try to get title from same line
             title = line.replace(v['url'], '').strip()
@@ -454,16 +459,16 @@ def extract_youtube_urls(text):
             if len(title) < 5 and i > 0:
                 prev = lines[i-1].strip()
                 if len(prev) > 10: title = prev
-            
+
             title = title.strip(' -:[]()') or "Unknown Title"
-            
+
             videos.append({
                 'video_id': v['id'],
                 'url': v['url'],
                 'title': title,
                 'date_found': datetime.now().strftime('%Y-%m-%d')
             })
-            
+
     return videos
 
 
@@ -860,6 +865,9 @@ def process_outlook_emails(folders_to_process=None):
     """
     Process emails from multiple Outlook Scott subfolders.
 
+    IMPORTANT: Also processes the MAIN Scott folder first to capture new emails
+    BEFORE they get moved to subfolders by the organizer.
+
     Args:
         folders_to_process: List of folder names to process. If None, uses DEFAULT_EXTRACT_FOLDERS.
     """
@@ -886,17 +894,37 @@ def process_outlook_emails(folders_to_process=None):
         print("ERROR: Could not find 'scott' folder")
         return
 
+    # =========================================================================
+    # STEP 1: Process MAIN Scott folder first (new emails before organization)
+    # =========================================================================
+    main_folder_count = scott_folder.Items.Count
+    main_folder_stats = {'emails': 0, 'github': 0, 'hf': 0, 'yt': 0, 'sref': 0, 'added': 0}
+
+    if main_folder_count > 0:
+        print(f"\n>>> MAIN SCOTT FOLDER: {main_folder_count} new emails <<<")
+        print("-" * 60)
+        main_folder_stats = process_subfolder(scott_folder, db)
+        print(f"    Extracted: {main_folder_stats['added']} new items from main folder")
+        save_master_db(db)  # Save immediately to preserve extractions
+    else:
+        print(f"\n>>> MAIN SCOTT FOLDER: empty (all organized) <<<")
+
+    # =========================================================================
+    # STEP 2: Process configured subfolders
+    # =========================================================================
     # Build a map of available subfolders
     available_folders = {}
     for sf in scott_folder.Folders:
         available_folders[sf.Name] = sf
 
-    print(f"Configured folders: {len(folders_to_process)}")
+    print(f"\nConfigured folders: {len(folders_to_process)}")
     print(f"Available in Outlook: {len(available_folders)}")
 
-    # Track stats per folder
+    # Track stats per folder (include main folder if it had emails)
     folder_stats = {}
-    total_added = 0
+    if main_folder_stats['emails'] > 0:
+        folder_stats['[MAIN FOLDER]'] = main_folder_stats
+    total_added = main_folder_stats['added']
 
     for folder_name in folders_to_process:
         if folder_name not in available_folders:
