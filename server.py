@@ -30,7 +30,8 @@ app.add_middleware(
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(BASE_DIR, 'rules', 'scott_config.yaml')
 LOG_PATH = os.path.join(BASE_DIR, 'orchestrator.log')
-DB_PATH = r'D:\AI-Knowledge-Base\chromadb'
+# ChromaDB path - matches knowledge_base.py used by orchestrator actions
+DB_PATH = os.path.join(BASE_DIR, 'data', 'knowledge_base')
 EXPORTS_PATH = r'D:\AI-Knowledge-Base\exports'
 SEARCH_INDEX_PATH = r'D:\AI-Knowledge-Base\tutorials\search_index.db'
 
