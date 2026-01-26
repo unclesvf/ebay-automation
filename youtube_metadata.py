@@ -290,10 +290,16 @@ def format_timestamp(seconds):
 # =============================================================================
 
 def update_tutorial_in_db(db, video_id, metadata, transcript_data):
-    """Update a tutorial entry in the database with metadata and transcript info."""
+    """Update a tutorial entry in the database with metadata and transcript info.
+
+    CRITICAL: This function protects existing successful transcript data.
+    If a tutorial already has has_transcript=True, we NEVER overwrite it with
+    error states or null data. This prevents database corruption from temporary
+    API failures (like IP rate limiting).
+    """
     for tutorial in db['tutorials']:
         if tutorial.get('video_id') == video_id:
-            # Update metadata
+            # Update metadata (always safe to update)
             if metadata:
                 tutorial['title'] = metadata.get('title')
                 tutorial['channel'] = metadata.get('channel')
@@ -306,16 +312,27 @@ def update_tutorial_in_db(db, video_id, metadata, transcript_data):
                 tutorial['thumbnail'] = metadata.get('thumbnail')
                 tutorial['metadata_fetched'] = metadata.get('fetched_at')
 
-            # Update transcript info
+            # Update transcript info - WITH DATA PROTECTION
+            existing_has_transcript = tutorial.get('has_transcript', False)
+
             if transcript_data and not transcript_data.get('error'):
+                # Success case: always update with good data
                 tutorial['has_transcript'] = True
                 tutorial['transcript_language'] = transcript_data.get('language')
                 tutorial['transcript_type'] = transcript_data.get('transcript_type')
                 tutorial['transcript_word_count'] = transcript_data.get('word_count')
                 tutorial['transcript_fetched'] = transcript_data.get('fetched_at')
+                # Clear any previous error
+                if 'transcript_error' in tutorial:
+                    del tutorial['transcript_error']
             elif transcript_data and transcript_data.get('error'):
-                tutorial['has_transcript'] = False
-                tutorial['transcript_error'] = transcript_data.get('error')
+                # Error case: ONLY update if we don't already have a successful transcript
+                if not existing_has_transcript:
+                    tutorial['has_transcript'] = False
+                    tutorial['transcript_error'] = transcript_data.get('error')
+                else:
+                    # PROTECT existing data - log but don't overwrite
+                    logger.warning(f"  Skipping error update for {video_id} - preserving existing transcript")
 
             return True
 
@@ -325,11 +342,20 @@ def update_tutorial_in_db(db, video_id, metadata, transcript_data):
 # MAIN PROCESSING
 # =============================================================================
 
-def process_all_tutorials(skip_existing=True, fetch_transcripts=True):
-    """Process all tutorials in the database."""
+def process_all_tutorials(skip_existing=True, fetch_transcripts=True, retry_failed=False):
+    """Process all tutorials in the database.
+
+    Args:
+        skip_existing: Skip tutorials that already have metadata fetched
+        fetch_transcripts: Whether to fetch transcripts (default True)
+        retry_failed: Only process videos that failed to get transcripts (safe retry mode)
+    """
     logger.info("=" * 70)
     logger.info("YOUTUBE METADATA & TRANSCRIPT EXTRACTOR")
     logger.info("=" * 70)
+
+    if retry_failed:
+        logger.info("MODE: Retry failed transcripts only (existing data protected)")
 
     # Backup database before processing
     backup_path = backup_database(reason="youtube_fetch")
@@ -349,10 +375,15 @@ def process_all_tutorials(skip_existing=True, fetch_transcripts=True):
         return
 
     # Count tutorials that need processing
-    to_process = [t for t in tutorials if t.get('video_id') and
-                  (not skip_existing or not t.get('metadata_fetched'))]
-
-    logger.info(f"Found {len(tutorials)} tutorials, {len(to_process)} need processing")
+    if retry_failed:
+        # Only process videos without transcripts (failed or never attempted)
+        to_process = [t for t in tutorials if t.get('video_id') and
+                      not t.get('has_transcript', False)]
+        logger.info(f"Found {len(tutorials)} tutorials, {len(to_process)} need transcript retry")
+    else:
+        to_process = [t for t in tutorials if t.get('video_id') and
+                      (not skip_existing or not t.get('metadata_fetched'))]
+        logger.info(f"Found {len(tutorials)} tutorials, {len(to_process)} need processing")
 
     if not to_process:
         logger.info("All tutorials already processed. Use --force to reprocess.")
@@ -371,8 +402,13 @@ def process_all_tutorials(skip_existing=True, fetch_transcripts=True):
         if not video_id:
             continue
 
-        # Check if already processed
-        if skip_existing and tutorial.get('metadata_fetched'):
+        # Check if should skip this tutorial
+        if retry_failed:
+            # In retry mode, skip videos that already have transcripts
+            if tutorial.get('has_transcript', False):
+                continue
+        elif skip_existing and tutorial.get('metadata_fetched'):
+            # In normal mode, skip already processed videos
             continue
 
         logger.info(f"Processing: {video_id}")
@@ -510,6 +546,17 @@ def show_stats():
                 words = t.get('transcript_word_count', 0)
                 print(f"  - {title}: {words:,} words")
 
+    # List tutorials WITHOUT transcripts (candidates for --retry-failed)
+    without_transcript = [t for t in tutorials if not t.get('has_transcript', False)]
+    if without_transcript:
+        print("\n" + "-" * 50)
+        print(f"TUTORIALS WITHOUT TRANSCRIPTS ({len(without_transcript)} - use --retry-failed)")
+        print("-" * 50)
+        for t in without_transcript:
+            title = t.get('title', t.get('video_id', 'Unknown'))[:40]
+            error = t.get('transcript_error', 'not attempted')
+            print(f"  - {title}: {error}")
+
 # =============================================================================
 # CLI
 # =============================================================================
@@ -526,9 +573,14 @@ def main():
         print("\nCommands:")
         print("  all                  Process all tutorials in database")
         print("  all --force          Process all (including already fetched)")
+        print("  all --retry-failed   SAFE: Only retry videos without transcripts")
         print("  all --no-transcript  Only fetch metadata, skip transcripts")
         print("  video <id_or_url>    Process a single video")
         print("  stats                Show transcript statistics")
+        print("\nData Protection:")
+        print("  --retry-failed is the SAFE way to retry. It only processes videos")
+        print("  that don't have transcripts yet, protecting existing data from")
+        print("  being overwritten by temporary API errors (rate limiting, etc.)")
         return
 
     cmd = sys.argv[1].lower()
@@ -536,7 +588,9 @@ def main():
     if cmd == 'all':
         skip_existing = '--force' not in sys.argv
         fetch_transcripts = '--no-transcript' not in sys.argv
-        process_all_tutorials(skip_existing=skip_existing, fetch_transcripts=fetch_transcripts)
+        retry_failed = '--retry-failed' in sys.argv
+        process_all_tutorials(skip_existing=skip_existing, fetch_transcripts=fetch_transcripts,
+                              retry_failed=retry_failed)
 
     elif cmd == 'video' and len(sys.argv) > 2:
         process_single_video(sys.argv[2])
