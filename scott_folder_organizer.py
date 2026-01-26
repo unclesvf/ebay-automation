@@ -44,17 +44,42 @@ SUBFOLDER_RULES = {
     'YouTube Videos': ['youtube', 'youtu.be', 'video'],
 }
 
+# High-priority categories that should be checked BEFORE X-Twitter catch-all
+# These are specific tools/topics the user actively uses and wants tracked separately
+HIGH_PRIORITY_CATEGORIES = [
+    'HiggsField',       # AI video generation - user has annual membership
+    'Claude-Anthropic', # Primary AI assistant
+    'Engraving-Laser',  # Laser equipment (XTool, fiber, CO2)
+    'Fadal',            # CNC machining center
+    'Adobe-Editing',    # Adobe creative suite
+    'NotebookLM',       # Google's AI notebook
+    'Coins-Numismatics', # Coin-related content
+]
+
 def categorize_email(subject, body):
     """Determine the best subfolder for an email based on content."""
     subject = subject or ''
     body = body or ''
     text = f"{subject} {body}".lower()
 
-    # Check X-Twitter first (high priority)
+    # 1. Check HIGH-PRIORITY categories first (specific tools/topics user cares about)
+    for folder in HIGH_PRIORITY_CATEGORIES:
+        if folder in SUBFOLDER_RULES:
+            for keyword in SUBFOLDER_RULES[folder]:
+                if keyword.lower() in text:
+                    return folder
+
+    # 2. Check X-Twitter (catches most social media forwards)
     if 'x.com' in text or 'twitter.com' in text or text.count('@') >= 2:
+        # But still check if it's about a specific AI tool we track
+        for folder, keywords in SUBFOLDER_RULES.items():
+            if folder not in HIGH_PRIORITY_CATEGORIES and folder != 'X-Twitter Posts':
+                for keyword in keywords:
+                    if keyword.lower() in text:
+                        return folder
         return 'X-Twitter Posts'
 
-    # Check other categories
+    # 3. Check other categories
     for folder, keywords in SUBFOLDER_RULES.items():
         for keyword in keywords:
             if keyword.lower() in text:
@@ -105,7 +130,7 @@ def analyze_and_organize():
             subject = item.Subject or '(no subject)'
             try:
                 body = item.Body[:2000] if item.Body else ''
-            except:
+            except (AttributeError, Exception):
                 body = ''
             date_str = str(item.ReceivedTime)[:10]
 
@@ -193,7 +218,7 @@ def analyze_and_organize():
                     subject = item.Subject or '(no subject)'
                     try:
                         body = item.Body or ''
-                    except:
+                    except (AttributeError, Exception):
                         body = ''
 
                     # Extract URLs

@@ -1401,16 +1401,9 @@ def generate_tool_mentions_report(extracted_data, db):
     # Collect tool mentions from extracted data
     tools_data = extracted_data.get('tools', [])
 
-    # Also get from transcript analyzer data
-    tool_mentions_file = os.path.join(EXTRACTED_PATH, 'tool_mentions.json')
-    analyzer_tools = {}
-    if os.path.exists(tool_mentions_file):
-        with open(tool_mentions_file, 'r', encoding='utf-8') as f:
-            analyzer_tools = json.load(f)
-
     # Build tool -> videos mapping
     tool_videos = {}
-    
+
     def is_valid_tool_name(name):
         """Filter out garbage tool names like numbers, single chars, etc."""
         if not name or len(name) < 2:
@@ -1446,22 +1439,18 @@ def generate_tool_mentions_report(extracted_data, db):
             if tool.get('context'):
                 tool_videos[tool_name]['contexts'].append(tool['context'])
 
-    # From transcript analyzer
-    for video_id, tools in analyzer_tools.items():
-        # Find video title
-        video_title = None
-        for tutorial in db.get('tutorials', []):
-            if tutorial.get('video_id') == video_id:
-                video_title = tutorial.get('title')
-                break
-        
-        # Skip if video title is unknown/missing - these produce broken links
-        if not video_title or video_title == 'Unknown' or video_title == 'Unknown Title':
+    # From tutorial database (populated by transcript_analyzer.py)
+    for tutorial in db.get('tutorials', []):
+        video_id = tutorial.get('video_id')
+        video_title = tutorial.get('title')
+        tools_mentioned = tutorial.get('tools_mentioned', [])
+
+        # Skip if video title is unknown/missing
+        if not video_title or video_title in ['Unknown', 'Unknown Title']:
             continue
 
-        for tool_name in tools:
+        for tool_name in tools_mentioned:
             tool_lower = tool_name.lower()
-            # Skip invalid tool names
             if not is_valid_tool_name(tool_lower):
                 continue
             if tool_lower not in tool_videos:
@@ -1470,7 +1459,7 @@ def generate_tool_mentions_report(extracted_data, db):
                     'videos': [],
                     'contexts': []
                 }
-            if video_id not in [v['id'] for v in tool_videos[tool_lower]['videos']]:
+            if video_id and video_id not in [v['id'] for v in tool_videos[tool_lower]['videos']]:
                 tool_videos[tool_lower]['videos'].append({
                     'id': video_id,
                     'title': video_title
@@ -1783,7 +1772,7 @@ def generate_search_page():
 
         <script>
             const API_BASE = window.location.port === '5173' || window.location.port === '5174'
-                ? 'http://localhost:8000'
+                ? 'http://localhost:8001'  // FastAPI server port (vLLM uses 8000)
                 : '';
 
             // Load index stats on page load

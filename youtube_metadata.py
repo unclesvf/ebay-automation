@@ -11,6 +11,18 @@ import re
 from datetime import datetime
 from pathlib import Path
 
+# Import centralized config
+from kb_config import (
+    get_logger, RateLimiter, ProgressTracker, backup_database,
+    MASTER_DB, TRANSCRIPTS_DIR, METADATA_CACHE
+)
+
+# Setup logger
+logger = get_logger("YouTubeMetadata")
+
+# Rate limiter for YouTube API calls
+rate_limiter = RateLimiter(delay=1.5, burst=3)  # Be gentle with YouTube
+
 # Third-party imports
 try:
     from youtube_transcript_api import YouTubeTranscriptApi
@@ -22,19 +34,19 @@ try:
     TRANSCRIPT_API_AVAILABLE = True
 except ImportError:
     TRANSCRIPT_API_AVAILABLE = False
-    print("Warning: youtube-transcript-api not installed. Run: pip install youtube-transcript-api")
+    logger.warning("youtube-transcript-api not installed. Run: pip install youtube-transcript-api")
 
 try:
     import yt_dlp
     YTDLP_AVAILABLE = True
 except ImportError:
     YTDLP_AVAILABLE = False
-    print("Warning: yt-dlp not installed. Run: pip install yt-dlp")
+    logger.warning("yt-dlp not installed. Run: pip install yt-dlp")
 
-# Paths
-MASTER_DB_PATH = r'D:\AI-Knowledge-Base\master_db.json'
-TRANSCRIPTS_PATH = r'D:\AI-Knowledge-Base\tutorials\transcripts'
-METADATA_CACHE_PATH = r'D:\AI-Knowledge-Base\youtube_metadata_cache.json'
+# Paths - use centralized config
+MASTER_DB_PATH = str(MASTER_DB)
+TRANSCRIPTS_PATH = str(TRANSCRIPTS_DIR)
+METADATA_CACHE_PATH = str(METADATA_CACHE)
 
 # =============================================================================
 # DATABASE FUNCTIONS
@@ -74,7 +86,8 @@ def ensure_transcript_dir():
 # =============================================================================
 
 def extract_video_id(url):
-    """Extract video ID from various YouTube URL formats."""
+    """Extract video ID from various YouTube URL formats.
+    YouTube video IDs are always exactly 11 characters."""
     patterns = [
         r'youtube\.com/watch\?v=([\w\-]+)',
         r'youtu\.be/([\w\-]+)',
@@ -85,7 +98,10 @@ def extract_video_id(url):
     for pattern in patterns:
         match = re.search(pattern, url)
         if match:
-            return match.group(1)
+            video_id = match.group(1)[:11]  # YouTube IDs are exactly 11 chars
+            if len(video_id) == 11:
+                return video_id
+            return None  # Invalid if not 11 chars
 
     # If it looks like just a video ID
     if re.match(r'^[\w\-]{11}$', url):
@@ -311,23 +327,39 @@ def update_tutorial_in_db(db, video_id, metadata, transcript_data):
 
 def process_all_tutorials(skip_existing=True, fetch_transcripts=True):
     """Process all tutorials in the database."""
-    print("=" * 70)
-    print("YOUTUBE METADATA & TRANSCRIPT EXTRACTOR")
-    print("=" * 70)
+    logger.info("=" * 70)
+    logger.info("YOUTUBE METADATA & TRANSCRIPT EXTRACTOR")
+    logger.info("=" * 70)
+
+    # Backup database before processing
+    backup_path = backup_database(reason="youtube_fetch")
+    if backup_path:
+        logger.info(f"Database backed up to: {backup_path}")
 
     db = load_db()
     if not db:
-        print("ERROR: Could not load database")
+        logger.error("Could not load database")
         return
 
     cache = load_metadata_cache()
     tutorials = db.get('tutorials', [])
 
     if not tutorials:
-        print("\nNo tutorials found in database.")
+        logger.info("No tutorials found in database.")
         return
 
-    print(f"\nFound {len(tutorials)} tutorials in database")
+    # Count tutorials that need processing
+    to_process = [t for t in tutorials if t.get('video_id') and
+                  (not skip_existing or not t.get('metadata_fetched'))]
+
+    logger.info(f"Found {len(tutorials)} tutorials, {len(to_process)} need processing")
+
+    if not to_process:
+        logger.info("All tutorials already processed. Use --force to reprocess.")
+        return
+
+    # Initialize progress tracker
+    tracker = ProgressTracker(total=len(to_process), description="YouTube fetch")
 
     processed = 0
     metadata_fetched = 0
@@ -339,53 +371,58 @@ def process_all_tutorials(skip_existing=True, fetch_transcripts=True):
         if not video_id:
             continue
 
-        print(f"\n[{i+1}/{len(tutorials)}] Processing: {video_id}")
-
         # Check if already processed
         if skip_existing and tutorial.get('metadata_fetched'):
-            print(f"    Skipping (already has metadata)")
             continue
 
+        logger.info(f"Processing: {video_id}")
+
+        # Rate limit API calls
+        rate_limiter.wait()
+
         # Fetch metadata
-        print(f"    Fetching metadata...")
         metadata = None
 
         if video_id in cache:
             metadata = cache[video_id]
-            print(f"    Using cached metadata: {metadata.get('title', 'Unknown')[:50]}")
+            logger.info(f"  Using cached metadata: {metadata.get('title', 'Unknown')[:50]}")
         else:
             metadata = get_video_metadata(video_id)
             if metadata:
                 cache[video_id] = metadata
-                print(f"    Title: {metadata.get('title', 'Unknown')[:50]}")
+                logger.info(f"  Title: {metadata.get('title', 'Unknown')[:50]}")
                 metadata_fetched += 1
             else:
-                print(f"    Failed to fetch metadata")
+                logger.warning(f"  Failed to fetch metadata")
                 errors += 1
 
         # Fetch transcript
         transcript_data = None
         if fetch_transcripts:
-            print(f"    Fetching transcript...")
+            rate_limiter.wait()  # Rate limit transcript API too
             transcript_data = get_transcript(video_id)
 
             if transcript_data and not transcript_data.get('error'):
-                print(f"    Transcript: {transcript_data.get('word_count', 0)} words ({transcript_data.get('transcript_type')})")
+                logger.info(f"  Transcript: {transcript_data.get('word_count', 0)} words")
                 transcripts_fetched += 1
 
                 # Save transcript file
                 filepath = save_transcript_file(video_id, transcript_data, metadata)
-                print(f"    Saved: {os.path.basename(filepath)}")
+                logger.info(f"  Saved: {os.path.basename(filepath)}")
             elif transcript_data and transcript_data.get('error'):
-                print(f"    Transcript error: {transcript_data.get('error')}")
+                logger.warning(f"  Transcript error: {transcript_data.get('error')}")
 
         # Update database
         update_tutorial_in_db(db, video_id, metadata, transcript_data)
         processed += 1
 
+        # Update progress
+        tracker.update(message=f"{video_id}")
+
     # Save everything
     save_db(db)
     save_metadata_cache(cache)
+    tracker.finish()
 
     print("\n" + "=" * 70)
     print("SUMMARY")

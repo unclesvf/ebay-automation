@@ -12,11 +12,20 @@ from datetime import datetime
 from pathlib import Path
 from collections import Counter, defaultdict
 
-# Paths
-MASTER_DB_PATH = r'D:\AI-Knowledge-Base\master_db.json'
-TRANSCRIPTS_PATH = r'D:\AI-Knowledge-Base\tutorials\transcripts'
-ANALYSIS_PATH = r'D:\AI-Knowledge-Base\tutorials\analysis'
-EXTRACTED_PATH = r'D:\AI-Knowledge-Base\extracted'
+# Import centralized config
+from kb_config import (
+    get_logger, backup_database, ProgressTracker,
+    MASTER_DB, TRANSCRIPTS_DIR, ANALYSIS_DIR, EXTRACTED_DIR
+)
+
+# Setup logger
+logger = get_logger("TranscriptAnalyzer")
+
+# Paths - use centralized config
+MASTER_DB_PATH = str(MASTER_DB)
+TRANSCRIPTS_PATH = str(TRANSCRIPTS_DIR)
+ANALYSIS_PATH = str(ANALYSIS_DIR)
+EXTRACTED_PATH = str(EXTRACTED_DIR)
 
 # =============================================================================
 # DETECTION PATTERNS
@@ -555,21 +564,32 @@ def aggregate_all_analyses():
 # MAIN
 # =============================================================================
 
-def process_all_transcripts():
-    """Analyze all transcripts in the database."""
-    print("=" * 70)
-    print("TRANSCRIPT ANALYZER")
-    print("=" * 70)
+def process_all_transcripts(force=False):
+    """
+    Analyze all transcripts in the database.
+
+    Args:
+        force: If True, reanalyze all transcripts. If False (default),
+               only analyze new/unanalyzed transcripts (incremental mode).
+    """
+    logger.info("=" * 70)
+    logger.info("TRANSCRIPT ANALYZER")
+    logger.info("=" * 70)
+
+    # Backup database before processing
+    backup_path = backup_database(reason="transcript_analysis")
+    if backup_path:
+        logger.info(f"Database backed up to: {backup_path}")
 
     db = load_db()
     if not db:
-        print("ERROR: Could not load database")
+        logger.error("Could not load database")
         return
 
     tutorials = db.get('tutorials', [])
-    analyzed = 0
-    errors = 0
 
+    # Filter to only tutorials that need analysis
+    to_analyze = []
     for tutorial in tutorials:
         video_id = tutorial.get('video_id')
         if not video_id:
@@ -577,9 +597,32 @@ def process_all_transcripts():
 
         # Check if has transcript
         if not tutorial.get('has_transcript'):
-            print(f"\nSkipping {video_id} - no transcript")
             continue
 
+        # Check if already analyzed (unless force mode)
+        if not force and tutorial.get('analyzed'):
+            continue
+
+        to_analyze.append(tutorial)
+
+    if not to_analyze:
+        if force:
+            logger.info("No tutorials with transcripts found.")
+        else:
+            logger.info("All tutorials already analyzed. Use --force to reanalyze.")
+        return
+
+    logger.info(f"Found {len(to_analyze)} tutorials to analyze" +
+                (" (incremental)" if not force else " (full reanalysis)"))
+
+    # Initialize progress tracker
+    tracker = ProgressTracker(total=len(to_analyze), description="Transcript analysis")
+
+    analyzed = 0
+    errors = 0
+
+    for tutorial in to_analyze:
+        video_id = tutorial.get('video_id')
         title = tutorial.get('title', video_id)
 
         try:
@@ -588,21 +631,24 @@ def process_all_transcripts():
                 save_analysis(analysis)
                 update_db_with_analysis(db, video_id, analysis)
                 analyzed += 1
+                tracker.update(message=title[:30] if title else video_id)
         except Exception as e:
-            print(f"  ERROR: {e}")
+            logger.error(f"Error analyzing {video_id}: {e}")
             errors += 1
+            tracker.update()
 
     # Save updated database
     save_db(db)
+    tracker.finish()
 
     # Aggregate all analyses
-    print("\n" + "=" * 70)
-    print("AGGREGATING ANALYSES")
-    print("=" * 70)
+    logger.info("=" * 70)
+    logger.info("AGGREGATING ANALYSES")
+    logger.info("=" * 70)
     aggregate_all_analyses()
 
-    print("\n" + "=" * 70)
-    print("SUMMARY")
+    logger.info("=" * 70)
+    logger.info("SUMMARY")
     print("=" * 70)
     print(f"  Analyzed: {analyzed}")
     print(f"  Errors: {errors}")
@@ -661,7 +707,8 @@ def main():
         print("\nUsage:")
         print("  python transcript_analyzer.py <command> [args]")
         print("\nCommands:")
-        print("  all                  Analyze all transcripts")
+        print("  all                  Analyze new/unanalyzed transcripts (incremental)")
+        print("  all --force          Reanalyze ALL transcripts")
         print("  video <video_id>     Analyze specific video")
         print("  show <video_id>      Show existing analysis")
         print("  aggregate            Aggregate all analyses")
@@ -670,7 +717,8 @@ def main():
     cmd = sys.argv[1].lower()
 
     if cmd == 'all':
-        process_all_transcripts()
+        force = '--force' in sys.argv
+        process_all_transcripts(force=force)
 
     elif cmd == 'video' and len(sys.argv) > 2:
         video_id = sys.argv[2]

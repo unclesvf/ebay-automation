@@ -15,6 +15,11 @@ import json
 import os
 import urllib.request
 import time
+import logging
+
+# Setup logger
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("AIContentExtractor")
 
 # Cache for expanded URLs to avoid re-fetching
 _url_cache = {}

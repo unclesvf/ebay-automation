@@ -25,6 +25,18 @@ import argparse
 from datetime import datetime
 from pathlib import Path
 
+# Import centralized config
+from kb_config import (
+    get_logger, backup_database, RateLimiter, ProgressTracker,
+    KNOWLEDGE_BASE, MASTER_DB, TRANSCRIPTS_DIR, EXTRACTED_DIR, TOKEN_USAGE,
+    VLLM_URL as CONFIG_VLLM_URL, VLLM_MODEL as CONFIG_VLLM_MODEL,
+    OLLAMA_URL as CONFIG_OLLAMA_URL, OLLAMA_MODEL as CONFIG_OLLAMA_MODEL,
+    LLM_TIMEOUT, LLM_MAX_RETRIES
+)
+
+# Setup logger
+logger = get_logger("ExtractKnowledge")
+
 try:
     import anthropic
     HAS_ANTHROPIC = True
@@ -53,23 +65,21 @@ except ImportError:
 # vLLM is fast local inference (runs in WSL2, ~3-5x faster than Ollama)
 # Groq is 10-20x faster than Ollama (uses custom LPU hardware)
 LLM_BACKEND = 'vllm'  # Options: 'ollama', 'claude', 'groq', 'vllm'
-OLLAMA_MODEL = 'qwen2.5:14b'  # 14B fits entirely in 24GB VRAM
-OLLAMA_URL = 'http://localhost:11434/api/generate'
+
+# Use centralized config values
+OLLAMA_MODEL = CONFIG_OLLAMA_MODEL
+OLLAMA_URL = f'{CONFIG_OLLAMA_URL}/api/generate'
 
 # vLLM settings (runs in WSL2 on localhost:8000)
-VLLM_URL = 'http://localhost:8000/v1'  # OpenAI-compatible API
-VLLM_MODEL = 'Qwen/Qwen2.5-7B-Instruct'  # 7B for faster inference
+VLLM_URL = f'{CONFIG_VLLM_URL}/v1'  # OpenAI-compatible API
+VLLM_MODEL = CONFIG_VLLM_MODEL
 
 # Groq settings (get free API key at https://console.groq.com/)
 GROQ_API_KEY = os.environ.get('GROQ_API_KEY', '')  # Set in environment or here
 GROQ_MODEL = 'llama-3.3-70b-versatile'  # Fast, high quality
 
-# Paths
-KNOWLEDGE_BASE = Path(r"D:\AI-Knowledge-Base")
-MASTER_DB = KNOWLEDGE_BASE / "master_db.json"
-TRANSCRIPTS_DIR = KNOWLEDGE_BASE / "tutorials" / "transcripts"
-EXTRACTED_DIR = KNOWLEDGE_BASE / "extracted"
-TOKEN_USAGE_FILE = KNOWLEDGE_BASE / "token_usage.json"
+# Token usage file
+TOKEN_USAGE_FILE = TOKEN_USAGE
 
 # Session token tracking
 SESSION_TOKENS = {

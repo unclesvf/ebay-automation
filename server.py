@@ -5,15 +5,21 @@ import subprocess
 import os
 import yaml
 import json
-import logging
 import sqlite3
 import threading
+import requests
 from typing import Dict, Any, List, Optional
 from fastapi.staticfiles import StaticFiles
+from datetime import datetime
 
-# Setup Logger
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("AmbroseServer")
+# Import centralized config
+from kb_config import (
+    get_logger, API_PORT, API_HOST, CHROMADB_PATH,
+    EXPORTS_DIR, SEARCH_INDEX, OLLAMA_MODEL, OLLAMA_URL
+)
+
+# Setup Logger using centralized config
+logger = get_logger("AmbroseServer")
 
 app = FastAPI(title="Ambrose API")
 
@@ -26,14 +32,14 @@ app.add_middleware(
     allow_headers=["Content-Type", "Authorization"],
 )
 
-# Paths
+# Paths - use centralized config where possible
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(BASE_DIR, 'rules', 'scott_config.yaml')
 LOG_PATH = os.path.join(BASE_DIR, 'orchestrator.log')
-# ChromaDB path - matches knowledge_base.py used by orchestrator actions
-DB_PATH = os.path.join(BASE_DIR, 'data', 'knowledge_base')
-EXPORTS_PATH = r'D:\AI-Knowledge-Base\exports'
-SEARCH_INDEX_PATH = r'D:\AI-Knowledge-Base\tutorials\search_index.db'
+# ChromaDB path - use centralized config
+DB_PATH = str(CHROMADB_PATH)
+EXPORTS_PATH = str(EXPORTS_DIR)
+SEARCH_INDEX_PATH = str(SEARCH_INDEX)
 
 # Global State (with thread-safe lock)
 ORCHESTRATOR_PROCESS = None
@@ -45,6 +51,87 @@ class ConfigUpdate(BaseModel):
 @app.get("/")
 def read_root():
     return {"status": "Ambrose System Online", "version": "1.0"}
+
+
+@app.get("/health")
+def health_check():
+    """
+    Health check endpoint for monitoring.
+    Returns status of all system components.
+    """
+    health = {
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "components": {}
+    }
+
+    # Check ChromaDB
+    try:
+        import chromadb
+        client = chromadb.PersistentClient(path=str(CHROMADB_PATH))
+        collection = client.get_or_create_collection("uncles_wisdom")
+        count = collection.count()
+        health["components"]["chromadb"] = {
+            "status": "healthy",
+            "items": count,
+            "path": str(CHROMADB_PATH)
+        }
+    except Exception as e:
+        health["components"]["chromadb"] = {
+            "status": "unhealthy",
+            "error": str(e)
+        }
+        health["status"] = "degraded"
+
+    # Check search index
+    try:
+        if SEARCH_INDEX.exists():
+            conn = sqlite3.connect(str(SEARCH_INDEX))
+            cursor = conn.execute("SELECT COUNT(*) FROM transcript_segments")
+            segment_count = cursor.fetchone()[0]
+            conn.close()
+            health["components"]["search_index"] = {
+                "status": "healthy",
+                "segments": segment_count
+            }
+        else:
+            health["components"]["search_index"] = {
+                "status": "not_found",
+                "path": str(SEARCH_INDEX)
+            }
+    except Exception as e:
+        health["components"]["search_index"] = {
+            "status": "unhealthy",
+            "error": str(e)
+        }
+
+    # Check Ollama availability
+    try:
+        resp = requests.get(f"{OLLAMA_URL}/api/tags", timeout=2)
+        if resp.status_code == 200:
+            health["components"]["ollama"] = {"status": "healthy"}
+        else:
+            health["components"]["ollama"] = {"status": "unavailable"}
+    except Exception:
+        health["components"]["ollama"] = {"status": "unavailable"}
+
+    # Check reports directory
+    try:
+        if EXPORTS_DIR.exists():
+            report_count = len(list(EXPORTS_DIR.glob("*.html")))
+            health["components"]["reports"] = {
+                "status": "healthy",
+                "count": report_count
+            }
+        else:
+            health["components"]["reports"] = {"status": "not_found"}
+    except Exception as e:
+        health["components"]["reports"] = {
+            "status": "unhealthy",
+            "error": str(e)
+        }
+
+    return health
 
 # Mount reports directory
 if os.path.exists(EXPORTS_PATH):
@@ -262,7 +349,7 @@ def get_status():
     return {
         "orchestrator_running": is_running,
         "ollama_status": ollama_status,
-        "model": "qwen2.5:32b" # hardcoded for now or read from config
+        "model": OLLAMA_MODEL  # Use centralized config
     }
 
 @app.get("/config")
@@ -505,4 +592,4 @@ def get_insights(limit: int = 50, sort_by: str = "impact"):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host=API_HOST, port=API_PORT)  # Use centralized config

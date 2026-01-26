@@ -64,8 +64,8 @@ class OutlookReader:
         try:
             for subfolder in folder.Folders:
                 result['subfolders'].append(self._enumerate_folders(subfolder, level + 1))
-        except:
-            pass
+        except (AttributeError, Exception) as e:
+            pass  # Skip folders that can't be enumerated
         return result
 
     def get_folder_by_name(self, folder_name: str, account_email: Optional[str] = None):
@@ -95,8 +95,8 @@ class OutlookReader:
                 found = self._find_folder(subfolder, target_name)
                 if found:
                     return found
-        except:
-            pass
+        except (AttributeError, Exception):
+            pass  # Skip folders that can't be accessed
         return None
 
     def read_emails(self, folder, limit: int = 50, unread_only: bool = False) -> List[Dict]:
@@ -156,7 +156,7 @@ class OutlookReader:
                 if sender:
                     return sender.GetExchangeUser().PrimarySmtpAddress
             return item.SenderEmailAddress
-        except:
+        except (AttributeError, Exception):
             return item.SenderEmailAddress or ""
 
     def mark_as_read(self, entry_id: str) -> bool:

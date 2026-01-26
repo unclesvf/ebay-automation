@@ -1,21 +1,34 @@
 """
 Shared Configuration for AI Knowledge Base Scripts
 
-Centralizes paths and settings used across all knowledge base scripts.
+Centralizes paths, settings, logging, and utilities used across all knowledge base scripts.
 """
 from pathlib import Path
+import logging
+import sys
+import time
+import shutil
+from datetime import datetime
+from functools import wraps
 
-# Base paths
+# =============================================================================
+# BASE PATHS
+# =============================================================================
 KNOWLEDGE_BASE = Path(r"D:\AI-Knowledge-Base")
 SOURCE_DIR = Path(r"C:\Users\scott\ebay-automation")
+CHROMADB_PATH = SOURCE_DIR / "data" / "knowledge_base"
 
-# Database paths
+# =============================================================================
+# DATABASE PATHS
+# =============================================================================
 MASTER_DB = KNOWLEDGE_BASE / "master_db.json"
 URL_CACHE = KNOWLEDGE_BASE / "url_cache.json"
 METADATA_CACHE = KNOWLEDGE_BASE / "youtube_metadata_cache.json"
 TOKEN_USAGE = KNOWLEDGE_BASE / "token_usage.json"
 
-# Directory paths
+# =============================================================================
+# DIRECTORY PATHS
+# =============================================================================
 TRANSCRIPTS_DIR = KNOWLEDGE_BASE / "tutorials" / "transcripts"
 ANALYSIS_DIR = KNOWLEDGE_BASE / "tutorials" / "analysis"
 SEARCH_INDEX = KNOWLEDGE_BASE / "tutorials" / "search_index.db"
@@ -26,11 +39,45 @@ COURSE_DIR = KNOWLEDGE_BASE / "course_materials"
 BACKUPS_DIR = KNOWLEDGE_BASE / "backups"
 SCRIPTS_DIR = KNOWLEDGE_BASE / "scripts"
 
-# Outlook settings
+# =============================================================================
+# SERVER/API SETTINGS
+# =============================================================================
+# IMPORTANT: vLLM uses port 8000, so FastAPI must use 8001
+VLLM_PORT = 8000
+VLLM_HOST = "localhost"
+VLLM_URL = f"http://{VLLM_HOST}:{VLLM_PORT}"
+
+API_PORT = 8001
+API_HOST = "0.0.0.0"
+
+FRONTEND_PORT = 5173
+
+# =============================================================================
+# LLM MODEL SETTINGS
+# =============================================================================
+# vLLM model (runs in WSL2)
+VLLM_MODEL = "Qwen/Qwen2.5-7B-Instruct"
+
+# Ollama fallback model
+OLLAMA_MODEL = "qwen2.5:14b"
+OLLAMA_HOST = "localhost"
+OLLAMA_PORT = 11434
+OLLAMA_URL = f"http://{OLLAMA_HOST}:{OLLAMA_PORT}"
+
+# LLM extraction settings
+LLM_TIMEOUT = 120  # seconds per request
+LLM_MAX_RETRIES = 3
+LLM_STAGE_TIMEOUT = 4 * 60 * 60  # 4 hours for full LLM stage
+
+# =============================================================================
+# OUTLOOK SETTINGS
+# =============================================================================
 OUTLOOK_ACCOUNT = "scott@unclesvf.com"
 SCOTT_FOLDER = "scott"
 
-# Folders to process for AI content extraction
+# =============================================================================
+# EMAIL FOLDER CATEGORIES
+# =============================================================================
 AI_CONTENT_FOLDERS = [
     'AI Agents', 'AI Art-Images', 'AI Music-Audio',
     'General AI', 'Claude-Anthropic', 'ChatGPT-OpenAI', 'Google-Gemini',
@@ -43,5 +90,259 @@ RELATED_CONTENT_FOLDERS = [
 ]
 DEFAULT_EXTRACT_FOLDERS = AI_CONTENT_FOLDERS + RELATED_CONTENT_FOLDERS
 
-# Default settings
+# =============================================================================
+# PROCESSING SETTINGS
+# =============================================================================
 DEFAULT_BATCH_SIZE = 5
+
+# Rate limiting for external APIs
+RATE_LIMIT_DELAY = 1.0  # seconds between API calls
+RATE_LIMIT_BURST = 5    # requests before enforcing delay
+
+# Retry settings
+RETRY_MAX_ATTEMPTS = 3
+RETRY_BASE_DELAY = 1.0  # seconds
+RETRY_MAX_DELAY = 30.0  # seconds
+RETRY_BACKOFF_FACTOR = 2.0
+
+# =============================================================================
+# LOGGING SETUP
+# =============================================================================
+LOG_FORMAT = "%(asctime)s | %(name)-20s | %(levelname)-8s | %(message)s"
+LOG_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
+LOG_FILE = KNOWLEDGE_BASE / "logs" / "pipeline.log"
+
+
+def get_logger(name: str, level: int = logging.INFO) -> logging.Logger:
+    """
+    Get a configured logger for a module.
+
+    Args:
+        name: Logger name (usually __name__ or script name)
+        level: Logging level (default INFO)
+
+    Returns:
+        Configured logger instance
+    """
+    logger = logging.getLogger(name)
+
+    # Avoid adding handlers multiple times
+    if logger.handlers:
+        return logger
+
+    logger.setLevel(level)
+
+    # Console handler with UTF-8 encoding
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(level)
+    console_handler.setFormatter(logging.Formatter(LOG_FORMAT, LOG_DATE_FORMAT))
+    logger.addHandler(console_handler)
+
+    # File handler (create log directory if needed)
+    try:
+        LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+        file_handler = logging.FileHandler(LOG_FILE, encoding='utf-8')
+        file_handler.setLevel(level)
+        file_handler.setFormatter(logging.Formatter(LOG_FORMAT, LOG_DATE_FORMAT))
+        logger.addHandler(file_handler)
+    except Exception:
+        pass  # Skip file logging if it fails
+
+    return logger
+
+
+# =============================================================================
+# UTILITY FUNCTIONS
+# =============================================================================
+
+def backup_database(source_path: Path = None, reason: str = "auto") -> Path:
+    """
+    Create a timestamped backup of a database file.
+
+    Args:
+        source_path: Path to file to backup (default: MASTER_DB)
+        reason: Reason for backup (included in filename)
+
+    Returns:
+        Path to backup file
+    """
+    if source_path is None:
+        source_path = MASTER_DB
+
+    if not source_path.exists():
+        return None
+
+    # Ensure backup directory exists
+    BACKUPS_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Create timestamped backup filename
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    backup_name = f"{source_path.stem}_{reason}_{timestamp}{source_path.suffix}"
+    backup_path = BACKUPS_DIR / backup_name
+
+    # Copy file
+    shutil.copy2(source_path, backup_path)
+
+    # Clean old backups (keep last 10)
+    cleanup_old_backups(source_path.stem, keep=10)
+
+    return backup_path
+
+
+def cleanup_old_backups(prefix: str, keep: int = 10):
+    """Remove old backup files, keeping the most recent ones."""
+    if not BACKUPS_DIR.exists():
+        return
+
+    # Find all backups matching prefix
+    backups = sorted(
+        BACKUPS_DIR.glob(f"{prefix}_*.json"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True
+    )
+
+    # Remove old ones
+    for old_backup in backups[keep:]:
+        try:
+            old_backup.unlink()
+        except Exception:
+            pass
+
+
+def retry_with_backoff(max_attempts: int = None, base_delay: float = None,
+                       max_delay: float = None, backoff_factor: float = None,
+                       exceptions: tuple = (Exception,)):
+    """
+    Decorator for retrying functions with exponential backoff.
+
+    Args:
+        max_attempts: Maximum retry attempts (default from config)
+        base_delay: Initial delay in seconds (default from config)
+        max_delay: Maximum delay in seconds (default from config)
+        backoff_factor: Multiplier for each retry (default from config)
+        exceptions: Tuple of exceptions to catch
+
+    Usage:
+        @retry_with_backoff(max_attempts=3, exceptions=(ConnectionError,))
+        def fetch_data():
+            ...
+    """
+    max_attempts = max_attempts or RETRY_MAX_ATTEMPTS
+    base_delay = base_delay or RETRY_BASE_DELAY
+    max_delay = max_delay or RETRY_MAX_DELAY
+    backoff_factor = backoff_factor or RETRY_BACKOFF_FACTOR
+
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            last_exception = None
+            delay = base_delay
+
+            for attempt in range(1, max_attempts + 1):
+                try:
+                    return func(*args, **kwargs)
+                except exceptions as e:
+                    last_exception = e
+                    if attempt < max_attempts:
+                        time.sleep(min(delay, max_delay))
+                        delay *= backoff_factor
+
+            raise last_exception
+
+        return wrapper
+    return decorator
+
+
+class RateLimiter:
+    """
+    Simple rate limiter for API calls.
+
+    Usage:
+        limiter = RateLimiter(delay=1.0, burst=5)
+        for item in items:
+            limiter.wait()
+            api_call(item)
+    """
+
+    def __init__(self, delay: float = None, burst: int = None):
+        self.delay = delay or RATE_LIMIT_DELAY
+        self.burst = burst or RATE_LIMIT_BURST
+        self.call_count = 0
+        self.last_call_time = 0
+
+    def wait(self):
+        """Wait if necessary before making next call."""
+        self.call_count += 1
+
+        if self.call_count > self.burst:
+            elapsed = time.time() - self.last_call_time
+            if elapsed < self.delay:
+                time.sleep(self.delay - elapsed)
+
+        self.last_call_time = time.time()
+
+    def reset(self):
+        """Reset the rate limiter."""
+        self.call_count = 0
+        self.last_call_time = 0
+
+
+class ProgressTracker:
+    """
+    Track progress of long-running operations.
+
+    Usage:
+        tracker = ProgressTracker(total=100, description="Processing items")
+        for item in items:
+            process(item)
+            tracker.update()
+        tracker.finish()
+    """
+
+    def __init__(self, total: int, description: str = "Processing"):
+        self.total = total
+        self.description = description
+        self.current = 0
+        self.start_time = time.time()
+        self.logger = get_logger("Progress")
+
+    def update(self, count: int = 1, message: str = None):
+        """Update progress by count."""
+        self.current += count
+
+        elapsed = time.time() - self.start_time
+        rate = self.current / elapsed if elapsed > 0 else 0
+        remaining = (self.total - self.current) / rate if rate > 0 else 0
+
+        pct = (self.current / self.total) * 100 if self.total > 0 else 0
+
+        status = f"{self.description}: {self.current}/{self.total} ({pct:.1f}%)"
+        if remaining > 0:
+            mins, secs = divmod(int(remaining), 60)
+            hours, mins = divmod(mins, 60)
+            if hours > 0:
+                status += f" - ETA: {hours}h {mins}m"
+            elif mins > 0:
+                status += f" - ETA: {mins}m {secs}s"
+            else:
+                status += f" - ETA: {secs}s"
+
+        if message:
+            status += f" - {message}"
+
+        self.logger.info(status)
+
+    def finish(self):
+        """Mark progress as complete."""
+        elapsed = time.time() - self.start_time
+        mins, secs = divmod(int(elapsed), 60)
+        hours, mins = divmod(mins, 60)
+
+        if hours > 0:
+            time_str = f"{hours}h {mins}m {secs}s"
+        elif mins > 0:
+            time_str = f"{mins}m {secs}s"
+        else:
+            time_str = f"{secs}s"
+
+        self.logger.info(f"{self.description}: Complete! {self.current} items in {time_str}")
