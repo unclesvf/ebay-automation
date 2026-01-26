@@ -87,11 +87,14 @@ def health_check():
     try:
         if SEARCH_INDEX.exists():
             conn = sqlite3.connect(str(SEARCH_INDEX))
-            cursor = conn.execute("SELECT COUNT(*) FROM transcript_segments")
+            cursor = conn.execute("SELECT COUNT(*) FROM transcripts")
+            transcript_count = cursor.fetchone()[0]
+            cursor = conn.execute("SELECT COUNT(*) FROM transcript_fts")
             segment_count = cursor.fetchone()[0]
             conn.close()
             health["components"]["search_index"] = {
                 "status": "healthy",
+                "transcripts": transcript_count,
                 "segments": segment_count
             }
         else:
