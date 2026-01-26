@@ -104,7 +104,7 @@ Translation:"""
 
     try:
         response = requests.post(
-            f"{VLLM_URL}/chat/completions",
+            f"{VLLM_URL}/v1/chat/completions",
             json={
                 "model": "Qwen/Qwen2.5-7B-Instruct",
                 "messages": [
@@ -349,7 +349,7 @@ def process_translations(backend='vllm', force=False):
     # Check vLLM availability if using that backend
     if backend == 'vllm':
         try:
-            response = requests.get(f"{VLLM_URL}/models", timeout=5)
+            response = requests.get(f"{VLLM_URL}/v1/models", timeout=5)
             if response.status_code != 200:
                 logger.error("vLLM not available. Start it with: vllm serve Qwen/Qwen2.5-7B-Instruct --port 8000")
                 return
