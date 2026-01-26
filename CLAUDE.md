@@ -101,10 +101,10 @@ Collection: `uncles_wisdom` (30 items)
 
 Both server.py and orchestrator actions use this same path.
 
-### Current Stats (Jan 25, 2026)
+### Current Stats (Jan 26, 2026)
 
-- 117 GitHub repos, 45 HuggingFace models, 46 YouTube tutorials
-- 3,303 extracted items (824 tips, 413 workflows, 235 prompts, 1,068 insights, 763 fabrication apps)
+- 124 GitHub repos, 45 HuggingFace models, 51 YouTube tutorials (36 with transcripts)
+- 45 extracted knowledge files, 36 analysis files, 19 export reports
 - 3 Midjourney sref codes
 
 ---

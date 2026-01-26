@@ -63,30 +63,28 @@ All settings are centralized in `kb_config.py`:
 
 | Source | Count |
 |--------|-------|
-| GitHub Repositories | 117 |
+| GitHub Repositories | 124 |
 | HuggingFace Models | 45 |
-| YouTube Tutorials | 46 |
-| - With Transcripts | 32 |
-| - LLM Processed | 32 |
+| YouTube Tutorials | 51 |
+| - With Transcripts | 36 |
+| - LLM Processed | 36 |
 | Midjourney sref Codes | 3 |
 
 ### Extracted Knowledge
 
-| Category | Count |
+| Category | Files |
 |----------|-------|
-| Tips | 824 |
-| Workflows | 413 |
-| Prompts | 235 |
-| Insights | 1,068 |
-| Fabrication Applications | 763 |
-| **Total** | **3,303** |
+| Knowledge files | 45 |
+| Analysis files | 36 |
+| Export reports | 19 |
+| Course materials | 12 |
 
 ### Search Capabilities
 
 | Type | Database | Contents |
 |------|----------|----------|
 | Cortex (semantic) | ChromaDB | 30 items (uncles_wisdom collection) |
-| Transcript (FTS5) | SQLite | 32 videos, 37,258 searchable segments |
+| Transcript (FTS5) | SQLite | 36 videos, 37,258+ searchable segments |
 
 ---
 
