@@ -91,6 +91,14 @@ STAGES = [
         default_enabled=True
     ),
     Stage(
+        id='translate',
+        script='translate_transcripts.py',
+        description='Translate non-English transcripts to English',
+        args=['translate'],
+        default_enabled=True,
+        timeout=3600  # 1 hour for translation
+    ),
+    Stage(
         id='search',
         script='transcript_search.py',
         description='Build FTS5 search index',
@@ -100,7 +108,7 @@ STAGES = [
     Stage(
         id='llm',
         script='extract_knowledge.py',
-        description='LLM knowledge extraction (Ollama/QWEN)',
+        description='LLM knowledge extraction (vLLM/QWEN)',
         default_enabled=True,
         requires_api_key=False,
         timeout=14400  # 4 hours - local LLM processes many videos with many chunks

@@ -111,13 +111,14 @@ Use these commands to invoke automated workflows:
 | 2 | organize | scott_folder_organizer.py | Move emails to categorized subfolders | 10 min |
 | 3 | youtube | youtube_metadata.py | Fetch video metadata and transcripts | 10 min |
 | 4 | analyze | transcript_analyzer.py | Extract tools, tips from transcripts | 10 min |
-| 5 | search | transcript_search.py | Build FTS5 full-text search index | 10 min |
-| 6 | llm | extract_knowledge.py | vLLM/QWEN knowledge extraction | 4 hours |
-| 7 | reports | generate_reports.py | Generate HTML reports | 10 min |
-| 8 | gallery | style_code_gallery.py | Generate Midjourney sref gallery | 10 min |
-| 9 | models | model_tracker.py | Generate AI model tracking report | 10 min |
-| 10 | courses | course_materials.py | Generate course materials | 10 min |
-| 11 | sync | sync_to_d_drive.py | Sync scripts and data to D: drive | 10 min |
+| 5 | translate | translate_transcripts.py | Translate non-English transcripts | 1 hour |
+| 6 | search | transcript_search.py | Build FTS5 full-text search index | 10 min |
+| 7 | llm | extract_knowledge.py | vLLM/QWEN knowledge extraction | 4 hours |
+| 8 | reports | generate_reports.py | Generate HTML reports | 10 min |
+| 9 | gallery | style_code_gallery.py | Generate Midjourney sref gallery | 10 min |
+| 10 | models | model_tracker.py | Generate AI model tracking report | 10 min |
+| 11 | courses | course_materials.py | Generate course materials | 10 min |
+| 12 | sync | sync_to_d_drive.py | Sync scripts and data to D: drive | 10 min |
 
 ### Running the Pipeline
 
@@ -151,6 +152,30 @@ python youtube_metadata.py all --force
 
 **Data Protection:** The `--retry-failed` flag only processes videos that don't have transcripts yet. Existing successful transcripts are NEVER overwritten with error states, protecting against temporary API failures (IP rate limiting).
 
+### Non-English Transcript Translation
+
+The system automatically fetches transcripts in any available language and can translate them to English.
+
+```bash
+# Check translation status
+python translate_transcripts.py status
+
+# Translate pending transcripts (uses vLLM)
+python translate_transcripts.py translate
+
+# Use lightweight opus-mt models instead
+python translate_transcripts.py translate --opus
+
+# Re-translate all (including already done)
+python translate_transcripts.py translate --force
+```
+
+**Translation Backends:**
+- **vLLM (default)** - Uses Qwen2.5-7B-Instruct (already running in WSL2)
+- **opus-mt** - Helsinki-NLP lightweight models (auto-downloads, faster)
+
+Non-English transcripts are marked with `needs_translation: true` and automatically processed in the pipeline's translate stage.
+
 ---
 
 ## Key Files Reference
@@ -159,9 +184,10 @@ python youtube_metadata.py all --force
 
 | File | Purpose | Key Functions |
 |------|---------|---------------|
-| `run_pipeline.py` | Master orchestrator | Runs all 11 stages in order |
+| `run_pipeline.py` | Master orchestrator | Runs all 12 stages in order |
 | `server.py` | FastAPI backend | /knowledge, /search, /reports, /run endpoints |
-| `extract_knowledge.py` | LLM extraction | Processes transcripts with vLLM/Ollama |
+| `extract_knowledge.py` | LLM extraction | Processes transcripts with vLLM |
+| `translate_transcripts.py` | Translation | Translates non-English transcripts |
 | `ai_content_extractor.py` | Email extraction | Extracts GitHub, HF, YouTube URLs from emails |
 | `scott_folder_organizer.py` | Email organization | Moves emails to 30+ categorized subfolders |
 | `generate_reports.py` | HTML reports | Creates index.html and category reports |
