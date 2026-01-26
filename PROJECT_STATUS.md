@@ -8,7 +8,7 @@
 
 ## System Overview
 
-The AMBROSE AI Knowledge Base is a comprehensive system for extracting, organizing, and searching AI-related knowledge from emails, YouTube tutorials, GitHub repos, and other sources. It features a FastAPI backend, React frontend (Cortex), and local LLM processing via vLLM/Ollama.
+The AMBROSE AI Knowledge Base is a comprehensive system for extracting, organizing, and searching AI-related knowledge from emails, YouTube tutorials, GitHub repos, and other sources. It features a FastAPI backend, React frontend (Cortex), and local LLM processing via vLLM.
 
 ### Architecture
 
@@ -19,16 +19,15 @@ The AMBROSE AI Knowledge Base is a comprehensive system for extracting, organizi
 │  Frontend (React/Vite)              │  Backend (FastAPI)                    │
 │  - Cortex: Semantic Search UI       │  - REST API (port 8001)               │
 │  - Universal Insights Dashboard     │  - Pipeline Orchestration             │
-│  - Reports Viewer                   │  - vLLM/Ollama Integration            │
+│  - Reports Viewer                   │  - vLLM Integration                   │
 │  - Interactive Transcript Search    │  - Outlook COM Automation             │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │  LLM Processing                                                              │
-│  - vLLM (WSL2, port 8000): Qwen2.5-7B-Instruct - PRIMARY                    │
-│  - Ollama (localhost:11434): qwen2.5:14b - FALLBACK                         │
+│  - vLLM (WSL2, port 8000): Qwen2.5-7B-Instruct                              │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │  Data Storage                                                                │
-│  - ChromaDB: Vector embeddings (data\knowledge_base\)                       │
-│  - SQLite FTS5: Transcript full-text search                                 │
+│  - ChromaDB: Vector embeddings (30 items in uncles_wisdom)                  │
+│  - SQLite FTS5: Transcript search (32 videos, 37,258 segments)              │
 │  - JSON: master_db.json, extracted knowledge files                          │
 │  - D:\AI-Knowledge-Base\: Reports, transcripts, exports                     │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -58,7 +57,7 @@ All settings are centralized in `kb_config.py`:
 
 ---
 
-## Current Statistics (January 25, 2026)
+## Current Statistics (January 26, 2026)
 
 ### Content Inventory
 
@@ -82,11 +81,12 @@ All settings are centralized in `kb_config.py`:
 | Fabrication Applications | 763 |
 | **Total** | **3,303** |
 
-### ChromaDB (Cortex)
+### Search Capabilities
 
-| Collection | Items |
-|------------|-------|
-| uncles_wisdom | 30 |
+| Type | Database | Contents |
+|------|----------|----------|
+| Cortex (semantic) | ChromaDB | 30 items (uncles_wisdom collection) |
+| Transcript (FTS5) | SQLite | 32 videos, 37,258 searchable segments |
 
 ---
 
@@ -197,17 +197,17 @@ Collection: `uncles_wisdom` - Used by both orchestrator actions and server.py
 
 ### System
 - `GET /` - System status
-- `GET /health` - Health check (ChromaDB, search index, Ollama, reports)
-- `GET /status` - Detailed status with timestamps
+- `GET /health` - Health check (ChromaDB, search index, vLLM, reports)
+- `GET /status` - Detailed status with vLLM check
 - `GET /logs` - Orchestrator log tail
 
-### Knowledge Base (Cortex)
-- `GET /knowledge?query=X&limit=N&threshold=T` - Semantic search
-- `GET /knowledge` (no query) - List recent items
+### Knowledge Base (Cortex) - Semantic Search
+- `GET /knowledge?query=X&limit=N` - Semantic search via ChromaDB
+- `GET /knowledge` (no query) - List all items in collection
 
-### Search
+### Transcript Search - Full-Text Search
 - `GET /search?q=X&channel=Y&topic=Z` - FTS5 transcript search
-- `GET /search/stats` - Search index statistics
+- `GET /search/stats` - Search index statistics (videos, segments, channels)
 
 ### Reports
 - `GET /reports/list` - List available HTML reports
