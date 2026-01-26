@@ -1,408 +1,347 @@
-# eBay Listing Automation Tool - Project Status
+# AMBROSE AI Knowledge Base - Project Status
 
-**Last Updated:** January 22, 2026
-**Status:** COMPLETED & ENHANCED
-
----
-
-## January 22, 2026 - New Email Categories & Auto-Open Reports
-
-### New Email Categories
-Added 3 new Outlook folder categories and enhanced existing:
-- **Engraving-Laser** (enhanced): Added keywords - opa, fiber laser, co2 laser, 3d engrav, coin engrav, creative space
-- **Adobe-Editing** (new): lightroom, photoshop, firefly, adobe creative, adobe cc
-- **HiggsField** (new): higgsfield, nanobanana, higgs field
-- **Grok-xAI** (new): grok imagine, grok image, grok ai, xai
-
-### Auto-Open Reports
-Pipeline now automatically opens `D:\AI-Knowledge-Base\exports\index.html` in Chrome when it finishes.
-- Use `--no-open` flag to disable: `python run_pipeline.py --no-open`
-
-### Files Modified
-- `scott_folder_organizer.py` - Added new SUBFOLDER_RULES entries
-- `organize_scott_folder.py` - Added matching categorization logic
-- `kb_config.py` - Added HiggsField, Grok-xAI to AI_CONTENT_FOLDERS; Engraving-Laser, Adobe-Editing to RELATED_CONTENT_FOLDERS
-- `run_pipeline.py` - Added open_reports() method and --no-open flag
+**Last Updated:** January 25, 2026
+**Status:** Production Ready
+**Git Branch:** feature/orchestrator-v1
 
 ---
 
-## January 21, 2026 - AI Knowledge Base Pipeline
+## System Overview
 
-### New Feature: Master Orchestration Script
-Added `run_pipeline.py` - a master script that runs all AI Knowledge Base scripts in the correct order with a single command.
+The AMBROSE AI Knowledge Base is a comprehensive system for extracting, organizing, and searching AI-related knowledge from emails, YouTube tutorials, GitHub repos, and other sources. It features a FastAPI backend, React frontend (Cortex), and local LLM processing via vLLM/Ollama.
 
-**Pipeline Stages (11 total):**
-| # | Stage | Script | Default | Description |
-|---|-------|--------|---------|-------------|
-| 1 | organize | scott_folder_organizer.py | ON | Organize Outlook emails |
-| 2 | extract | ai_content_extractor.py | ON | Extract URLs from emails |
-| 3 | youtube | youtube_metadata.py | ON | Fetch video metadata/transcripts |
-| 4 | analyze | transcript_analyzer.py | ON | Extract tools, tips |
-| 5 | search | transcript_search.py | ON | Build FTS5 search index |
-| 6 | llm | extract_knowledge.py | OFF | Claude API extraction (costs $) |
-| 7 | reports | generate_reports.py | ON | Generate HTML reports |
-| 8 | gallery | style_code_gallery.py | ON | Generate sref gallery |
-| 9 | models | model_tracker.py | ON | Generate model report |
-| 10 | courses | course_materials.py | ON | Generate course materials |
-| 11 | sync | sync_to_d_drive.py | ON | Sync to D: drive |
+### Architecture
 
-**Usage:**
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           AMBROSE System                                     │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Frontend (React/Vite)              │  Backend (FastAPI)                    │
+│  - Cortex: Semantic Search UI       │  - REST API (port 8001)               │
+│  - Universal Insights Dashboard     │  - Pipeline Orchestration             │
+│  - Reports Viewer                   │  - vLLM/Ollama Integration            │
+│  - Interactive Transcript Search    │  - Outlook COM Automation             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  LLM Processing                                                              │
+│  - vLLM (WSL2, port 8000): Qwen2.5-7B-Instruct - PRIMARY                    │
+│  - Ollama (localhost:11434): qwen2.5:14b - FALLBACK                         │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Data Storage                                                                │
+│  - ChromaDB: Vector embeddings (data\knowledge_base\)                       │
+│  - SQLite FTS5: Transcript full-text search                                 │
+│  - JSON: master_db.json, extracted knowledge files                          │
+│  - D:\AI-Knowledge-Base\: Reports, transcripts, exports                     │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Port Configuration
+
+| Service | Port | Purpose |
+|---------|------|---------|
+| vLLM | 8000 | Local LLM inference (WSL2) |
+| FastAPI Server | 8001 | Backend API |
+| Frontend (Vite) | 5173 | React development server |
+| Ollama | 11434 | Fallback LLM |
+
+### Key Configuration
+
+| Setting | Value |
+|---------|-------|
+| LLM Backend | vLLM (configurable in extract_knowledge.py) |
+| LLM Model | Qwen/Qwen2.5-7B-Instruct |
+| vLLM URL | http://localhost:8000/v1 |
+| Fallback | Ollama with qwen2.5:14b |
+| Scripts | C:\Users\scott\ebay-automation\ |
+| Data | D:\AI-Knowledge-Base\ |
+| ChromaDB | C:\Users\scott\ebay-automation\data\knowledge_base\ |
+
+---
+
+## Current Statistics (January 25, 2026)
+
+### Content Inventory
+
+| Source | Count |
+|--------|-------|
+| GitHub Repositories | 117 |
+| HuggingFace Models | 45 |
+| YouTube Tutorials | 46 |
+| - With Transcripts | 32 |
+| - LLM Processed | 32 |
+| Midjourney sref Codes | 3 |
+
+### Extracted Knowledge
+
+| Category | Count |
+|----------|-------|
+| Tips | 824 |
+| Workflows | 413 |
+| Prompts | 235 |
+| Insights | 1,068 |
+| Fabrication Applications | 763 |
+| **Total** | **3,303** |
+
+### ChromaDB (Cortex)
+
+| Collection | Items |
+|------------|-------|
+| uncles_wisdom | 30 |
+
+---
+
+## Skills (Claude Code)
+
+Use these commands to invoke automated workflows:
+
+| Skill | Trigger | Purpose |
+|-------|---------|---------|
+| ambrose-server | "start the server" | Start FastAPI + React frontend |
+| ebay-linda | "process eBay emails" | Process Linda's eBay listing emails |
+| scott-folder | "organize Scott folder" | Organize emails, extract insights |
+| fix-outlook-kb | "fix Outlook KB issue" | Fix Outlook COM after Windows Update |
+
+---
+
+## Pipeline Stages
+
+**Execution Order:** Extract runs BEFORE organize to capture URLs from new emails before they're moved to subfolders.
+
+| # | ID | Script | Description | Timeout |
+|---|-----|--------|-------------|---------|
+| 1 | extract | ai_content_extractor.py | Extract URLs from main folder + subfolders | 10 min |
+| 2 | organize | scott_folder_organizer.py | Move emails to categorized subfolders | 10 min |
+| 3 | youtube | youtube_metadata.py | Fetch video metadata and transcripts | 10 min |
+| 4 | analyze | transcript_analyzer.py | Extract tools, tips from transcripts | 10 min |
+| 5 | search | transcript_search.py | Build FTS5 full-text search index | 10 min |
+| 6 | llm | extract_knowledge.py | vLLM/QWEN knowledge extraction | 4 hours |
+| 7 | reports | generate_reports.py | Generate HTML reports | 10 min |
+| 8 | gallery | style_code_gallery.py | Generate Midjourney sref gallery | 10 min |
+| 9 | models | model_tracker.py | Generate AI model tracking report | 10 min |
+| 10 | courses | course_materials.py | Generate course materials | 10 min |
+| 11 | sync | sync_to_d_drive.py | Sync scripts and data to D: drive | 10 min |
+
+### Running the Pipeline
+
 ```bash
-python run_pipeline.py                    # Full pipeline (10 stages, ~3-5 seconds)
-python run_pipeline.py status             # Show KB status
-python run_pipeline.py --dry-run          # Preview without executing
-python run_pipeline.py --stage reports    # Run single stage
-python run_pipeline.py --from youtube     # Run from stage onwards
-python run_pipeline.py --list-stages      # List all stages
-python run_pipeline.py --extract-knowledge # Enable LLM stage (costs $)
-python run_pipeline.py --no-open          # Don't open reports in browser
+# Full pipeline (opens reports when done)
+python run_pipeline.py
+
+# Options
+python run_pipeline.py --no-open       # Don't open browser
+python run_pipeline.py --dry-run       # Preview only
+python run_pipeline.py --skip-llm      # Skip LLM stage (faster)
+python run_pipeline.py status          # Show KB status
+python run_pipeline.py --stage llm     # Run single stage
+python run_pipeline.py --stages youtube,analyze  # Multiple stages
+python run_pipeline.py --from youtube  # Run from stage onwards
+python run_pipeline.py --list-stages   # List all stages
 ```
 
-**Files Created:**
-- `run_pipeline.py` - Master orchestration script (406 lines)
-- `kb_config.py` - Shared configuration constants
-- `pipeline_state.json` - Tracks last run state
-
-**Bug Fixes:**
-- Fixed `scott_folder_organizer.py` null handling for emails with empty subject/body
-- Fixed subprocess encoding to handle Unicode characters in email content
-
-**Current KB Stats (Jan 21, 2026):**
-- 7 GitHub repos, 2 HuggingFace models, 1 YouTube tutorial
-- 546 emails organized across 27 subfolders
-- 18 HTML reports generated in `D:\AI-Knowledge-Base\exports\`
-
 ---
 
-## January 20, 2026 (Session 3) - Critical Classification Bug Fix
+## Key Files Reference
 
-### Critical Bug Fix
-1. **"List new and raise to $X" was misclassified as PRICE REVISION** - The `_is_price_revision()` method checked for "raise to" BEFORE "list new", causing emails like "List new and raise to $69.50" to be incorrectly treated as price revisions (just change price) instead of END & RELIST.
+### Core Scripts (C:\Users\scott\ebay-automation\)
 
-   **Root cause:** Pattern matching order was wrong:
-   ```python
-   # OLD (buggy): checked "raise to" first
-   if re.search(r'\braise\s+to\s+\$?[\d,]+', text_lower):
-       return True  # WRONG - matched before checking "list new"
-   ```
+| File | Purpose | Key Functions |
+|------|---------|---------------|
+| `run_pipeline.py` | Master orchestrator | Runs all 11 stages in order |
+| `server.py` | FastAPI backend | /knowledge, /search, /reports, /run endpoints |
+| `extract_knowledge.py` | LLM extraction | Processes transcripts with vLLM/Ollama |
+| `ai_content_extractor.py` | Email extraction | Extracts GitHub, HF, YouTube URLs from emails |
+| `scott_folder_organizer.py` | Email organization | Moves emails to 30+ categorized subfolders |
+| `generate_reports.py` | HTML reports | Creates index.html and category reports |
+| `kb_config.py` | Configuration | Shared constants, folder lists, paths |
+| `youtube_metadata.py` | YouTube processing | Fetches metadata and transcripts |
+| `transcript_analyzer.py` | Transcript analysis | Extracts tools, techniques, tips |
+| `transcript_search.py` | Search index | Builds FTS5 full-text search |
+| `style_code_gallery.py` | Sref gallery | Generates Midjourney style reference gallery |
 
-   **Fix:** Check for "list new" FIRST:
-   ```python
-   # NEW (fixed): check "list new" first
-   if re.search(r'\blist\s+new\b', text_lower):
-       return False  # Correct - END & RELIST, not price revision
-   ```
+### Frontend (C:\Users\scott\ebay-automation\frontend\)
 
-   **Impact:** 25+ items were processed incorrectly (price revised instead of ended/relisted). User had to manually end and relist all affected items.
-
-### New Feature
-2. **Follow-up email auto-detection** - When Linda sends a follow-up email for an already-completed item with new instructions:
-   - Script detects the newer unread email
-   - Prints a warning: "*** FOLLOW-UP EMAILS DETECTED ***"
-   - Automatically removes item from completed list
-   - Includes item in current batch with the NEW instructions
-
-### Classification Rules (Clarified)
-| Email Text | Classification |
-|------------|----------------|
-| "List new and raise to $X" | END & RELIST |
-| "List new $X" | END & RELIST |
-| "Raise to $X" (no "list new") | PRICE REVISION |
-| "Lower to $X" (no "list new") | PRICE REVISION |
-
-### Files Modified
-- `email_parser.py` - Fixed `_is_price_revision()` to check "list new" before "raise to"
-- `end_and_relist.py` - Added follow-up email detection in `get_next_batch()`
-
-### Statistics
-- **Session:** 55 items processed + 25 items re-done due to bug
-- **Today total:** 55 items
-
----
-
-## January 20, 2026 (Session 2) - Title-Only Tracking & Gallery Photo Features
-
-### Bug Fix
-1. **Title-only items now tracked by `--done` flag** - Previously, title-only items (Add Silver, NEW TITLE, etc.) were NOT tracked and required manual marking as read in Outlook. Now:
-   - Title-only items are saved to `title_pending_entries.txt`
-   - Running `--done` marks both price items AND title-only items as complete
-   - Both types are marked as read in Outlook and logged to `completed_items.txt`
-
-### New Features
-1. **Pending Items Verification Table** - When running without `--done`, shows a full table of pending items:
-   - Displays Item ID, Price/Type for each pending item
-   - Shows eBay links for easy verification
-   - Helps user confirm items are actually completed before marking done
-
-2. **Gallery Photo Info Pages** - When Linda's email mentions "gallery photo":
-   - Creates an HTML info page with the email body and instructions
-   - Opens the info page in Chrome BEFORE the item's eBay page
-   - Makes it easy to see what photo change is needed
-
-3. **Fixed ebay-linda Skill** - Simplified skill.md to avoid bash parsing errors with inline backticks
-
-### Files Modified
-- `end_and_relist.py` - Added `TITLE_PENDING_FILE`, `GALLERY_INFO_DIR`, pending verification table, gallery photo info pages
-- `.claude/skills/ebay-linda/skill.md` - Simplified to avoid parsing errors
-- `.claude/skills/ebay-linda/REFERENCE.md` - Updated file tracking documentation
-
----
-
-## January 20, 2026 (Session 1) - Major Fixes & UI Improvements
-
-### Critical Bug Fix
-1. **REVISE vs END & RELIST separation** - Previously ALL price items were treated as END & RELIST. Now correctly separates:
-   - **"Raise to $X"** or **"Lower to $X"** = **REVISE** (just change the price, do NOT end listing)
-   - **"List new $X"** = **END & RELIST** (end listing, then Sell Similar with new price)
-   - Added `is_price_revision` field to `EbayListingInfo` dataclass
-   - Added `_is_price_revision()` method to detect Raise/Lower patterns
-
-### UI Improvements
-1. **Compact table format** - Each item now shows on 2-3 lines:
-   ```
-   [1] 277385925984 | NEW PRICE: $150.00 | REVISE
-       TITLE:  Silver Souvenir Spoon AUDITORIUM Long Beach
-       ACTION: Raise to $150.00
-   ```
-2. **Separate sections** - PRICE REVISIONS and END & RELIST shown in separate sections with different Chrome windows
-3. **All fields visible** - Tab #, Item ID, Title, New Price, Type (REVISE/LIST NEW), Action
-
-### New Features
-1. **Buyer blocking** - When "block" is detected in notes:
-   - Opens eBay Buyer Block page (https://www.ebay.com/bmgt/BuyerBlock)
-   - Extracts and displays buyer username from email
-   - Added `buyer_username` field and `_extract_buyer_username()` method
-
-### Files Modified
-- `email_parser.py` - Added `is_price_revision`, `buyer_username` fields and detection methods
-- `end_and_relist.py` - Complete UI rewrite, separated REVISE from END & RELIST sections
-
-### Statistics (at time of session)
-- **Session:** 4 items processed
-- **Running total:** 184 items
-
----
-
-## January 18, 2026 - Bug Fixes
-
-### Bug Fixes
-1. **"List new" without price now handled correctly** - Emails that say "List new" followed by a URL (but no price) were incorrectly categorized as "title-only/REVISE" items. They are now correctly treated as End/Relist items with "(Current Price)" displayed.
-
-2. **Title-only items no longer auto-marked as done** - Previously, running `--done` would mark ALL pending items complete, including "title-only" items that may not have displayed properly. Now:
-   - Only End/Relist items are tracked in the pending file
-   - Title-only items are shown separately with a note to mark them read manually in Outlook
-   - Running `--done` only marks the End/Relist items as complete
-
-### Files Modified
-- `email_parser.py` - Added `relist_current_price` flag and `_is_list_new_no_price()` method
-- `end_and_relist.py` - Updated pending file logic and display handling
-
----
-
-## Summary
-
-Tool to automate eBay listing price updates based on emails from Linda in Outlook.
-
-**Correct Workflow (End & Relist):**
-1. Read unread emails from "Linda" folder in scott@unclesvf.com account
-2. Parse eBay item ID, price, quantity, and special instructions from each email
-3. Open eBay "End Your Listing" page + item pages in Chrome
-4. End each listing (reason: "error in listing")
-5. Click "Sell Similar" on item page, set new price (and quantity if specified)
-6. Run with `--done` flag to mark batch complete and get next batch
-
----
-
-## Completion Summary
-
-### eBay Automation: 235+ items as of January 21, 2026
-
-All price update emails from the Linda folder have been processed using the end → sell similar workflow.
-
-**Note:** Initial approach (revising prices) was incorrect. Correct workflow is to END the listing, then use "Sell Similar" to relist at the new price.
-
-### AI Knowledge Base: Active as of January 21, 2026
-
-Pipeline running with 10 stages enabled. Content: 7 GitHub repos, 2 HuggingFace, 1 tutorial with transcript, 546 emails organized.
-
----
-
-## January 17, 2026 - Additional Enhancements (Batch 2)
-
-### New Features
-1. **Typo tolerance** - Parser now handles common typos:
-   - "List ne $39.50" (missing 'w')
-   - "List nw $55.00" (transposed letters)
-   - "Raise to $XX", "Lower to $XX", "Change to $XX" patterns
-
-2. **Email preview mode** - When items need review, shows the first 8 lines of the email body so you can see the original context without opening Outlook
-
-3. **Undo/recovery mode** (`--undo` flag) - Remove items from completed list for reprocessing:
-   ```
-   python end_and_relist.py --undo 276715685145 276715685146
-   ```
-
-4. **Statistics tracking** (`--stats` flag) - Track processing counts:
-   - Today's count
-   - This week's count
-   - All-time total
-   - Daily breakdown for last 7 days
-
-5. **Custom batch size** (`--batch N` flag) - Adjust batch size as needed:
-   ```
-   python end_and_relist.py --batch 10  # Process 10 items at a time
-   ```
-
-6. **Title-only listing support** - Emails with eBay URL but no price are now shown as a separate category:
-   - Displayed with `***` markers as "TITLE/HEADER CHANGES ONLY"
-   - Uses REVISE workflow (not End/Relist) since price doesn't change
-   - Opens item pages directly for quick editing
-
-7. **Full new title extraction** - When Linda shows the complete new title after "Add to header" or similar:
-   - Extracts and displays the full title with placement already shown
-   - Example: `*** NEW TITLE: Lot 3 Copper 1/2" Fittings Threaded Male Adapters New`
-   - Makes it easy to copy/paste the exact title Linda wants
-
----
-
-## January 17, 2026 - Major Bug Fixes & Enhancements (Batch 1)
-
-### Bug Fixes
-1. **Price parsing from body only** - Fixed bug where "$1" from item titles like "$1 Rare Brass Koala Bear" was incorrectly parsed as the price. Now extracts prices only from email body.
-
-2. **Explicit completion with --done flag** - Script no longer auto-marks batches complete. Must run with `--done` flag after processing. Prevents items from being accidentally skipped.
-
-3. **Skip reply emails** - Emails starting with "Re:" are now filtered out (these are conversations, not listings).
-
-4. **Surface instruction emails** - Emails from Linda without eBay URLs (general instructions like "change all coin cards to $7.95") are now displayed prominently.
-
-### New Features
-1. **Quantity parsing** - Detects "quantity 2", "qty 2", "list 2 at $9.99" patterns
-2. **Special instructions/notes** - Captures "change header", "change title", "change description", "gallery photo", etc.
-3. **mark_as_unread() method** - Added to OutlookReader for recovery scenarios
-4. **Colored text extraction from HTML** - Parses Linda's colored text:
-   - **Blue text** = New header/title to USE (e.g., `>>> USE (blue): New Title Here`)
-   - **Red text** = Text to REMOVE (e.g., `>>> REMOVE (red): Old Text`)
-5. **"Needs Review" flag** - Alerts when parser detects inconsistencies:
-   - "change header" mentioned but no blue text found
-   - "change description" mentioned but no colored text found
-   - Gallery photo changes requested
-   - Displays as: `!!! REVIEW NEEDED: reason`
-6. **Smart instruction handling** (`--instructions` flag) - Parses bulk instruction emails:
-   - Extracts search terms from "change all X to $Y" style emails
-   - Extracts target price and expected item count
-   - Opens Seller Hub with pre-filled searches for easy bulk editing
-
----
-
-## Files in Project
-
-### eBay Automation
 | File | Purpose |
 |------|---------|
-| `end_and_relist.py` | **CURRENT SCRIPT** - End listing + Sell Similar workflow |
-| `instruction_parser.py` | Parses bulk instruction emails (change all X to $Y) |
-| `outlook_reader.py` | Outlook COM automation module |
-| `email_parser.py` | Parses eBay URLs and prices from email text |
-| `config.py` | Configuration settings (eBay) |
-| `completed_items.txt` | Log of processed item IDs |
-| `stats.txt` | Processing statistics by date |
+| `src/App.jsx` | Main React app with routing |
+| `src/api.js` | API client (proxies to port 8001) |
+| `src/components/Cortex.jsx` | Semantic search UI (ChromaDB) |
+| `src/components/Dashboard.jsx` | Main dashboard |
+| `src/components/UniversalInsights.jsx` | Insights browser |
+| `src/components/Reports.jsx` | Reports viewer |
+| `vite.config.js` | Vite config (proxy to 8001) |
 
-### AI Knowledge Base
-| File | Purpose |
-|------|---------|
-| `run_pipeline.py` | **PIPELINE** - Master orchestration script |
-| `kb_config.py` | Shared configuration constants |
-| `scott_folder_organizer.py` | Organize Scott folder emails |
-| `ai_content_extractor.py` | Extract URLs from emails |
-| `youtube_metadata.py` | Fetch video metadata/transcripts |
-| `transcript_analyzer.py` | Extract tools, tips from transcripts |
-| `transcript_search.py` | FTS5 search index |
-| `generate_reports.py` | Generate HTML reports |
-| `style_code_gallery.py` | Midjourney sref gallery |
-| `model_tracker.py` | AI model tracking |
-| `course_materials.py` | Generate course content |
-| `extract_knowledge.py` | Claude API extraction (optional) |
-| `sync_to_d_drive.py` | Sync to D:\AI-Knowledge-Base |
-| `pipeline_state.json` | Pipeline run state |
+### Data Files (D:\AI-Knowledge-Base\)
 
-### Deprecated/Backup
-| File | Purpose |
-|------|---------|
-| `main.py` | Original interactive CLI (deprecated) |
-| `ebay_browser.py` | Selenium Chrome automation (not used) |
-| `process_batch.py` | Old batch processor (deprecated) |
-| `OutlookMacro.vba` | VBA macro for Outlook (backup) |
-| `process_export.py` | Processes VBA export (backup) |
+| Path | Contents |
+|------|----------|
+| `master_db.json` | Main database (repos, tutorials, styles) |
+| `extracted/` | all_tips.json, all_workflows.json, etc. |
+| `exports/` | HTML reports (index.html is entry point) |
+| `tutorials/transcripts/` | YouTube transcript cache |
+| `tutorials/search_index.db` | FTS5 search database |
+| `backups/` | Timestamped backups |
 
----
-
-## How to Use (Future Batches)
-
-When new emails arrive in the Linda folder:
+### ChromaDB Location
 
 ```
+C:\Users\scott\ebay-automation\data\knowledge_base\
+  └── chroma.sqlite3
+  └── [collection folders]
+```
+
+Collection: `uncles_wisdom` - Used by both orchestrator actions and server.py
+
+---
+
+## API Endpoints
+
+### System
+- `GET /` - System status
+- `GET /status` - Detailed status with timestamps
+- `GET /logs` - Orchestrator log tail
+
+### Knowledge Base (Cortex)
+- `GET /knowledge?query=X&limit=N&threshold=T` - Semantic search
+- `GET /knowledge` (no query) - List recent items
+
+### Search
+- `GET /search?q=X&channel=Y&topic=Z` - FTS5 transcript search
+- `GET /search/stats` - Search index statistics
+
+### Reports
+- `GET /reports/list` - List available HTML reports
+- Static files served at `/reports-static/`
+
+### Pipeline
+- `POST /run?profile=X` - Run orchestrator
+- `GET /config` - Get current config
+- `POST /config/dry_run` - Set dry run mode
+
+### Insights
+- `GET /insights?limit=N&sort_by=X` - Universal insights
+
+---
+
+## Recent Bug Fixes (January 2026)
+
+| Issue | File | Fix |
+|-------|------|-----|
+| Email content loss | run_pipeline.py | Extract runs BEFORE organize |
+| Cortex ChromaDB mismatch | server.py | Changed to use data\knowledge_base path |
+| vLLM hangs | extract_knowledge.py | Added 5-min timeout per request |
+| LLM stage timeout | run_pipeline.py | Increased to 4 hours |
+| Race condition | server.py | Added threading.Lock() |
+| Silent email errors | ai_content_extractor.py | Proper error logging |
+| Empty knowledge peek | server.py | Fixed items array building |
+| JSON corruption | ai_content_extractor.py | Added try/except handling |
+| Missing subfolders | scott_folder_organizer.py | Auto-create on demand |
+
+---
+
+## Starting the System
+
+### Quick Start (use skill)
+Say: "start the server" or "start Cortex"
+
+### Manual Start
+
+```bash
+# 1. Start vLLM (in WSL2)
+vllm serve Qwen/Qwen2.5-7B-Instruct --port 8000
+
+# 2. Start FastAPI backend
 cd C:\Users\scott\ebay-automation
-python end_and_relist.py
+python -m uvicorn server:app --host 0.0.0.0 --port 8001
+
+# 3. Start React frontend
+cd C:\Users\scott\ebay-automation\frontend
+npm run dev
+
+# 4. Open browser
+start chrome "http://localhost:5173"
 ```
 
-**Commands:**
-- `python end_and_relist.py` - Show current batch (safe to run anytime, does NOT mark anything complete)
-- `python end_and_relist.py --done` - Mark previous batch complete, then show next batch
-- `python end_and_relist.py --instructions` - Process bulk instruction emails (e.g., "change all X to $Y")
-- `python end_and_relist.py --test` - Process only 2 items (for testing)
-- `python end_and_relist.py --batch N` - Set custom batch size (e.g., `--batch 10` for 10 items)
-- `python end_and_relist.py --stats` - Show processing statistics (today, week, all-time)
-- `python end_and_relist.py --undo ID1 ID2` - Remove items from completed list (for reprocessing)
-
-**Workflow:**
-1. Run script (no flags) - opens End Your Listing page (Tab 1) + item pages (Tabs 2+)
-2. Review terminal output for:
-   - Item numbers and prices
-   - **QUANTITY** (if not 1)
-   - **NOTES** (change header, etc.)
-   - **INSTRUCTION EMAILS** (general instructions from Linda)
-3. Copy item numbers to End Your Listing page, select "error in listing", end each
-4. Go to each item tab, click "Sell Similar", enter the new price (and quantity if specified)
-5. Run `python end_and_relist.py --done` to mark batch complete and get next batch
-6. Repeat until "No more unread emails" message
+### View Static Reports
+```bash
+start chrome "D:\AI-Knowledge-Base\exports\index.html"
+```
 
 ---
 
-## Configuration
+## Troubleshooting
 
-- **Outlook Account:** scott@unclesvf.com
-- **Folder:** Linda
-- **Filter:** Unread emails only
-- **Batch size:** 5 items (2 in test mode)
-- **End Listing URL:** https://www.ebay.com/help/action?topicid=4146
+### vLLM Not Responding
+```bash
+# Check vLLM status
+curl http://localhost:8000/v1/models
+
+# If not running, start in WSL2:
+wsl -d Ubuntu
+vllm serve Qwen/Qwen2.5-7B-Instruct --port 8000
+```
+
+### Ollama Fallback
+```bash
+# Switch backend in extract_knowledge.py line 55:
+LLM_BACKEND = 'ollama'  # Change from 'vllm'
+
+# Verify Ollama is running
+curl http://localhost:11434/api/tags
+```
+
+### Port 8001 Already in Use
+```bash
+netstat -ano | findstr :8001
+taskkill /PID <pid> /F
+```
+
+### Cortex Returns No Results
+1. Check ChromaDB has items: `python -c "import chromadb; c=chromadb.PersistentClient(path='data/knowledge_base'); print(c.get_collection('uncles_wisdom').count())"`
+2. Verify server.py DB_PATH points to `data/knowledge_base`
+3. Restart server after path changes
+
+### Outlook COM Errors
+- Often caused by Windows Updates
+- Use `fix-outlook-kb` skill to diagnose
+- May need to uninstall specific KB updates
 
 ---
 
-## Technical Notes
+## Fabrication Context
 
-### Email Parser
-- **Prices:** Extracts from email BODY only (not subject) to avoid false matches in item titles
-- **Patterns:** "List new $XX.XX", "New price: $XX.XX", "Price: $XX.XX", or bare "$XX.XX"
-- **Quantity:** Detects "quantity N", "qty N", "list N at $XX.XX"
-- **Notes:** Captures lines containing: change header, change title, change description, gallery photo, raise to, lower to
-- **Item ID:** Extracts from eBay URL (ebay.com/itm/XXXXXXXXX)
-- **Filtering:** Skips "Re:" reply emails, surfaces instruction emails without eBay URLs
+The LLM extraction includes cross-domain fabrication analysis for Scott's shop capabilities:
 
-### Outlook COM
-- Uses pywin32 for Outlook automation
-- Methods: mark_as_read(), mark_as_unread(), move_email()
-- Can be unstable after Windows Updates
-- VBA macro approach available as backup (see OutlookMacro.vba)
+- **Fadal VMC4020**: CNC machining center
+- **ShopBot PRS Alpha**: 5'x8' CNC router
+- **100W Mopa Fiber Laser**: Metal engraving
+- **55W CO2 Laser**: Wood/acrylic cutting
+- **3D Printers**: Prototyping
 
-### Known Limitations
-- "End listing" or "Decline offer" emails are skipped (no price to extract)
-- Instruction emails (no eBay URL) are surfaced but require manual handling
+The system identifies potential connections between AI techniques and physical fabrication workflows.
 
 ---
 
-## Dependencies (Installed)
+## Future Enhancements
 
-- pywin32 (Outlook COM)
-- selenium (Chrome automation - not currently used)
-- webdriver-manager (ChromeDriver management)
+1. **ChromaDB Expansion** - Ingest more content into vector store
+2. **Real-time Pipeline** - Watch folder for new emails
+3. **Search Filters** - Faceted search by category, date, source
+4. **Export Options** - CSV/PDF export of knowledge
+5. **Scheduling** - Automated daily pipeline runs
+6. **Better Transcripts** - Handle YouTube API blocks gracefully
+
+---
+
+## Git Repository
+
+- **Remote:** https://github.com/unclesvf/ebay-automation.git
+- **Branch:** feature/orchestrator-v1
+- **Main scripts committed and pushed**
+
+---
+
+## Contact
+
+**Developer:** Scott
+**Scripts:** C:\Users\scott\ebay-automation\
+**Data:** D:\AI-Knowledge-Base\
+**Skills:** C:\Users\scott\.claude\skills\
