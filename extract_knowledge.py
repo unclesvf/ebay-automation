@@ -30,7 +30,6 @@ from kb_config import (
     get_logger, backup_database, RateLimiter, ProgressTracker,
     KNOWLEDGE_BASE, MASTER_DB, TRANSCRIPTS_DIR, EXTRACTED_DIR, TOKEN_USAGE,
     VLLM_URL as CONFIG_VLLM_URL, VLLM_MODEL as CONFIG_VLLM_MODEL,
-    OLLAMA_URL as CONFIG_OLLAMA_URL, OLLAMA_MODEL as CONFIG_OLLAMA_MODEL,
     LLM_TIMEOUT, LLM_MAX_RETRIES
 )
 
@@ -45,9 +44,9 @@ except ImportError:
 
 try:
     import requests as ollama_requests
-    HAS_OLLAMA = True
+    HAS_REQUESTS = True
 except ImportError:
-    HAS_OLLAMA = False
+    HAS_REQUESTS = False
 
 try:
     from groq import Groq
@@ -61,22 +60,19 @@ try:
 except ImportError:
     HAS_OPENAI = False
 
-# LLM Backend setting - options: 'ollama', 'claude', 'groq', 'vllm'
-# vLLM is fast local inference (runs in WSL2, ~3-5x faster than Ollama)
-# Groq is 10-20x faster than Ollama (uses custom LPU hardware)
-LLM_BACKEND = 'vllm'  # Options: 'ollama', 'claude', 'groq', 'vllm'
+# LLM Backend - vLLM is the only backend used in this project
+# Runs in WSL2 on localhost:8000, ~3-5x faster than Ollama
+LLM_BACKEND = 'vllm'
 
-# Use centralized config values
-OLLAMA_MODEL = CONFIG_OLLAMA_MODEL
-OLLAMA_URL = f'{CONFIG_OLLAMA_URL}/api/generate'
-
-# vLLM settings (runs in WSL2 on localhost:8000)
+# vLLM settings
 VLLM_URL = f'{CONFIG_VLLM_URL}/v1'  # OpenAI-compatible API
 VLLM_MODEL = CONFIG_VLLM_MODEL
 
-# Groq settings (get free API key at https://console.groq.com/)
-GROQ_API_KEY = os.environ.get('GROQ_API_KEY', '')  # Set in environment or here
-GROQ_MODEL = 'llama-3.3-70b-versatile'  # Fast, high quality
+# Legacy settings (not used, kept for potential future use)
+OLLAMA_URL = 'http://localhost:11434/api/generate'
+OLLAMA_MODEL = 'qwen2.5:14b'
+GROQ_API_KEY = os.environ.get('GROQ_API_KEY', '')
+GROQ_MODEL = 'llama-3.3-70b-versatile'
 
 # Token usage file
 TOKEN_USAGE_FILE = TOKEN_USAGE

@@ -15,7 +15,7 @@ from datetime import datetime
 # Import centralized config
 from kb_config import (
     get_logger, API_PORT, API_HOST, CHROMADB_PATH,
-    EXPORTS_DIR, SEARCH_INDEX, OLLAMA_MODEL, OLLAMA_URL
+    EXPORTS_DIR, SEARCH_INDEX, VLLM_URL, VLLM_MODEL
 )
 
 # Setup Logger using centralized config
@@ -108,15 +108,15 @@ def health_check():
             "error": str(e)
         }
 
-    # Check Ollama availability
+    # Check vLLM availability (primary LLM backend)
     try:
-        resp = requests.get(f"{OLLAMA_URL}/api/tags", timeout=2)
+        resp = requests.get(f"{VLLM_URL}/v1/models", timeout=2)
         if resp.status_code == 200:
-            health["components"]["ollama"] = {"status": "healthy"}
+            health["components"]["vllm"] = {"status": "healthy", "url": VLLM_URL}
         else:
-            health["components"]["ollama"] = {"status": "unavailable"}
+            health["components"]["vllm"] = {"status": "unavailable"}
     except Exception:
-        health["components"]["ollama"] = {"status": "unavailable"}
+        health["components"]["vllm"] = {"status": "unavailable", "note": "Start vLLM in WSL2"}
 
     # Check reports directory
     try:
@@ -335,24 +335,23 @@ def get_status():
     global ORCHESTRATOR_PROCESS
     with ORCHESTRATOR_LOCK:
         is_running = ORCHESTRATOR_PROCESS is not None and ORCHESTRATOR_PROCESS.poll() is None
-    
-    # Check Ollama
-    ollama_status = "Unknown"
+
+    # Check vLLM (primary LLM backend in WSL2)
+    vllm_status = "Unknown"
     try:
-        import requests
-        resp = requests.get("http://localhost:11434", timeout=2)
+        resp = requests.get(f"{VLLM_URL}/v1/models", timeout=2)
         if resp.status_code == 200:
-            ollama_status = "Online"
+            vllm_status = "Online"
     except (requests.RequestException, ConnectionError, TimeoutError):
-        ollama_status = "Offline"
+        vllm_status = "Offline"
     except Exception as e:
-        logger.warning(f"Ollama check failed: {e}")
-        ollama_status = "Offline"
+        logger.warning(f"vLLM check failed: {e}")
+        vllm_status = "Offline"
 
     return {
         "orchestrator_running": is_running,
-        "ollama_status": ollama_status,
-        "model": OLLAMA_MODEL  # Use centralized config
+        "vllm_status": vllm_status,
+        "model": VLLM_MODEL
     }
 
 @app.get("/config")

@@ -55,19 +55,17 @@ FRONTEND_PORT = 5173
 # =============================================================================
 # LLM MODEL SETTINGS
 # =============================================================================
-# vLLM model (runs in WSL2)
+# vLLM is the primary (and only) LLM backend for this project
+# Runs in WSL2 on port 8000
 VLLM_MODEL = "Qwen/Qwen2.5-7B-Instruct"
-
-# Ollama fallback model
-OLLAMA_MODEL = "qwen2.5:14b"
-OLLAMA_HOST = "localhost"
-OLLAMA_PORT = 11434
-OLLAMA_URL = f"http://{OLLAMA_HOST}:{OLLAMA_PORT}"
 
 # LLM extraction settings
 LLM_TIMEOUT = 120  # seconds per request
 LLM_MAX_RETRIES = 3
 LLM_STAGE_TIMEOUT = 4 * 60 * 60  # 4 hours for full LLM stage
+
+# Note: Ollama is NOT used in this project (vLLM is faster)
+# Ollama remains installed on system for other projects
 
 # =============================================================================
 # OUTLOOK SETTINGS

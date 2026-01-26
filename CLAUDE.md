@@ -35,7 +35,6 @@ Full-stack AI knowledge extraction system:
 | vLLM | 8000 | Runs in WSL2, do NOT use for FastAPI |
 | FastAPI Server | 8001 | Backend API |
 | Frontend (Vite) | 5173 | React dev server |
-| Ollama | 11434 | Fallback LLM |
 
 ### Quick Commands
 

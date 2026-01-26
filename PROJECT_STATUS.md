@@ -38,10 +38,9 @@ The AMBROSE AI Knowledge Base is a comprehensive system for extracting, organizi
 
 | Service | Port | Purpose |
 |---------|------|---------|
-| vLLM | 8000 | Local LLM inference (WSL2) |
+| vLLM | 8000 | Local LLM inference (WSL2) - PRIMARY |
 | FastAPI Server | 8001 | Backend API |
 | Frontend (Vite) | 5173 | React development server |
-| Ollama | 11434 | Fallback LLM |
 
 ### Key Configuration
 
@@ -49,10 +48,9 @@ All settings are centralized in `kb_config.py`:
 
 | Setting | Value |
 |---------|-------|
-| LLM Backend | vLLM (configurable in extract_knowledge.py) |
+| LLM Backend | vLLM (runs in WSL2) |
 | LLM Model | Qwen/Qwen2.5-7B-Instruct |
 | vLLM URL | http://localhost:8000/v1 |
-| Fallback | Ollama with qwen2.5:14b |
 | Scripts | C:\Users\scott\ebay-automation\ |
 | Data | D:\AI-Knowledge-Base\ |
 | ChromaDB | C:\Users\scott\ebay-automation\data\knowledge_base\ |
@@ -355,15 +353,10 @@ curl http://localhost:8000/v1/models
 # If not running, start in WSL2:
 wsl -d Ubuntu
 vllm serve Qwen/Qwen2.5-7B-Instruct --port 8000
-```
 
-### Ollama Fallback
-```bash
-# Switch backend in extract_knowledge.py line 55:
-LLM_BACKEND = 'ollama'  # Change from 'vllm'
-
-# Verify Ollama is running
-curl http://localhost:11434/api/tags
+# If WSL2 needs restart:
+wsl --shutdown
+# Then relaunch Ubuntu and start vLLM
 ```
 
 ### Port 8001 Already in Use
