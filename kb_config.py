@@ -344,3 +344,123 @@ class ProgressTracker:
             time_str = f"{secs}s"
 
         self.logger.info(f"{self.description}: Complete! {self.current} items in {time_str}")
+
+
+# =============================================================================
+# VLLM MANAGEMENT (WSL2)
+# =============================================================================
+# vLLM runs in WSL2 (Ubuntu-24.04) and persists in GPU memory
+# These utilities allow starting/stopping vLLM to free GPU resources
+
+WSL_DISTRO = "Ubuntu-24.04"
+
+def is_vllm_running():
+    """Check if vLLM is currently running in WSL2."""
+    import subprocess
+    try:
+        result = subprocess.run(
+            ['wsl', '-d', WSL_DISTRO, '-e', 'bash', '-c', 'pgrep -f "vllm serve"'],
+            capture_output=True, text=True, timeout=10
+        )
+        return result.returncode == 0
+    except Exception:
+        return False
+
+def stop_vllm():
+    """Stop vLLM server in WSL2 to free GPU memory."""
+    import subprocess
+    logger = get_logger("vLLM")
+
+    if not is_vllm_running():
+        logger.info("vLLM is not running")
+        return True
+
+    try:
+        logger.info("Stopping vLLM server...")
+
+        # First try graceful termination
+        subprocess.run(
+            ['wsl', '-d', WSL_DISTRO, '-e', 'bash', '-c', 'pkill -f "vllm serve"'],
+            capture_output=True, text=True, timeout=10
+        )
+        time.sleep(2)
+
+        # If still running, force kill
+        if is_vllm_running():
+            logger.info("Forcing vLLM shutdown...")
+            subprocess.run(
+                ['wsl', '-d', WSL_DISTRO, '-e', 'bash', '-c', 'pkill -9 -f "vllm serve"'],
+                capture_output=True, text=True, timeout=10
+            )
+            time.sleep(2)
+
+        if not is_vllm_running():
+            logger.info("vLLM stopped successfully - GPU memory freed")
+            return True
+        else:
+            logger.warning("vLLM may still be running")
+            return False
+
+    except Exception as e:
+        logger.error(f"Error stopping vLLM: {e}")
+        return False
+
+def start_vllm():
+    """Start vLLM server in WSL2 (background process)."""
+    import subprocess
+    logger = get_logger("vLLM")
+
+    if is_vllm_running():
+        logger.info("vLLM is already running")
+        return True
+
+    try:
+        logger.info(f"Starting vLLM with {VLLM_MODEL}...")
+        # Start vLLM in background using nohup
+        cmd = f'nohup vllm serve {VLLM_MODEL} --port {VLLM_PORT} --host 0.0.0.0 --dtype bfloat16 --enforce-eager --max-model-len 8192 > /tmp/vllm.log 2>&1 &'
+        subprocess.run(
+            ['wsl', '-d', WSL_DISTRO, '-e', 'bash', '-c', cmd],
+            capture_output=True, text=True, timeout=10
+        )
+
+        # Wait for vLLM to start (it takes a while to load the model)
+        logger.info("Waiting for vLLM to load model (this may take 30-60 seconds)...")
+        import requests
+        for i in range(60):  # Wait up to 60 seconds
+            time.sleep(1)
+            try:
+                response = requests.get(f"{VLLM_URL}/v1/models", timeout=2)
+                if response.status_code == 200:
+                    logger.info("vLLM started successfully")
+                    return True
+            except:
+                pass
+
+        logger.warning("vLLM may not have started properly - check /tmp/vllm.log in WSL2")
+        return False
+
+    except Exception as e:
+        logger.error(f"Error starting vLLM: {e}")
+        return False
+
+def vllm_status():
+    """Get vLLM status information."""
+    import requests
+    status = {
+        'running': is_vllm_running(),
+        'responsive': False,
+        'model': None
+    }
+
+    if status['running']:
+        try:
+            response = requests.get(f"{VLLM_URL}/v1/models", timeout=5)
+            if response.status_code == 200:
+                status['responsive'] = True
+                data = response.json()
+                if data.get('data'):
+                    status['model'] = data['data'][0].get('id')
+        except:
+            pass
+
+    return status

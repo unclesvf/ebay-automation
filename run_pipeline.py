@@ -150,10 +150,11 @@ STAGES = [
 class PipelineRunner:
     """Orchestrates the AI Knowledge Base pipeline."""
 
-    def __init__(self, dry_run: bool = False, skip_llm: bool = False, no_open: bool = False):
+    def __init__(self, dry_run: bool = False, skip_llm: bool = False, no_open: bool = False, stop_llm: bool = False):
         self.dry_run = dry_run
         self.skip_llm = skip_llm
         self.no_open = no_open
+        self.stop_llm = stop_llm  # Stop vLLM after pipeline to free GPU
         self.results: Dict[str, StageResult] = {}
         self.start_time = None
 
@@ -343,6 +344,16 @@ class PipelineRunner:
         # Open reports in browser (unless dry run or --no-open)
         if not self.dry_run and not self.no_open:
             self.open_reports()
+
+        # Stop vLLM to free GPU memory (if --stop-llm flag set)
+        if self.stop_llm and not self.dry_run:
+            from kb_config import stop_vllm, is_vllm_running
+            if is_vllm_running():
+                print("\nStopping vLLM to free GPU memory...")
+                if stop_vllm():
+                    print("vLLM stopped - GPU memory freed")
+                else:
+                    print("Warning: Could not stop vLLM")
 
         return self.results
 
@@ -534,6 +545,8 @@ Examples:
                        help='Anthropic API key for LLM extraction')
     parser.add_argument('--no-open', action='store_true',
                        help='Do not open reports in browser after completion')
+    parser.add_argument('--stop-llm', action='store_true',
+                       help='Stop vLLM after pipeline to free GPU memory')
 
     args = parser.parse_args()
 
@@ -554,7 +567,8 @@ Examples:
     runner = PipelineRunner(
         dry_run=args.dry_run,
         skip_llm=args.skip_llm,
-        no_open=args.no_open
+        no_open=args.no_open,
+        stop_llm=args.stop_llm
     )
 
     # Determine stages to run
