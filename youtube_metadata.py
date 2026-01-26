@@ -48,6 +48,13 @@ MASTER_DB_PATH = str(MASTER_DB)
 TRANSCRIPTS_PATH = str(TRANSCRIPTS_DIR)
 METADATA_CACHE_PATH = str(METADATA_CACHE)
 
+# Permanent failure error types - these will NEVER succeed, don't retry
+PERMANENT_FAILURE_ERRORS = {
+    'transcripts_disabled',  # Uploader disabled transcripts
+    'video_unavailable',     # Video is private/deleted
+    'no_transcript',         # No transcript exists (e.g., foreign language)
+}
+
 # =============================================================================
 # DATABASE FUNCTIONS
 # =============================================================================
@@ -155,10 +162,15 @@ def get_video_metadata(video_id):
 # TRANSCRIPT EXTRACTION
 # =============================================================================
 
-def get_transcript(video_id, languages=['en', 'en-US', 'en-GB']):
+def get_transcript(video_id, languages=['en', 'en-US', 'en-GB'], fallback_any_language=True):
     """
     Fetch transcript for a YouTube video.
     Returns dict with transcript text and metadata.
+
+    Args:
+        video_id: YouTube video ID
+        languages: Preferred languages to try first (default English)
+        fallback_any_language: If True, try to get any available language if preferred not found
     """
     if not TRANSCRIPT_API_AVAILABLE:
         return None
@@ -167,10 +179,57 @@ def get_transcript(video_id, languages=['en', 'en-US', 'en-GB']):
         # Create API instance (new API format)
         api = YouTubeTranscriptApi()
 
-        # Fetch transcript
-        transcript_data = api.fetch(video_id)
-        language_used = 'en'
-        transcript_type = 'auto'
+        # First, list available transcripts
+        transcript_list = api.list(video_id)
+        available = list(transcript_list)
+
+        if not available:
+            return {'video_id': video_id, 'error': 'no_transcript'}
+
+        # Try to find preferred language (English)
+        transcript_to_use = None
+        language_used = None
+        is_generated = False
+
+        # First pass: look for manual English transcripts
+        for t in available:
+            if t.language_code in languages and not t.is_generated:
+                transcript_to_use = t
+                language_used = t.language_code
+                is_generated = False
+                break
+
+        # Second pass: look for auto-generated English
+        if not transcript_to_use:
+            for t in available:
+                if t.language_code.startswith('en') and t.is_generated:
+                    transcript_to_use = t
+                    language_used = t.language_code
+                    is_generated = True
+                    break
+
+        # Third pass: fallback to any available language
+        if not transcript_to_use and fallback_any_language:
+            # Prefer manual over auto-generated
+            for t in available:
+                if not t.is_generated:
+                    transcript_to_use = t
+                    language_used = t.language_code
+                    is_generated = False
+                    logger.info(f"  Using non-English transcript: {t.language} ({t.language_code})")
+                    break
+
+            if not transcript_to_use:
+                transcript_to_use = available[0]
+                language_used = available[0].language_code
+                is_generated = available[0].is_generated
+                logger.info(f"  Using auto-generated non-English: {available[0].language}")
+
+        if not transcript_to_use:
+            return {'video_id': video_id, 'error': 'no_transcript'}
+
+        # Fetch the selected transcript
+        transcript_data = transcript_to_use.fetch()
 
         if not transcript_data:
             return None
@@ -198,14 +257,18 @@ def get_transcript(video_id, languages=['en', 'en-US', 'en-GB']):
                     'text': text
                 })
 
+        # Mark if translation is needed (non-English)
+        needs_translation = not language_used.startswith('en')
+
         return {
             'video_id': video_id,
             'language': language_used,
-            'transcript_type': transcript_type,
+            'transcript_type': 'auto' if is_generated else 'manual',
             'full_text': ' '.join(full_text),
             'segments': segments,
             'segment_count': len(segments),
             'word_count': len(' '.join(full_text).split()),
+            'needs_translation': needs_translation,
             'fetched_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         }
 
@@ -296,6 +359,9 @@ def update_tutorial_in_db(db, video_id, metadata, transcript_data):
     If a tutorial already has has_transcript=True, we NEVER overwrite it with
     error states or null data. This prevents database corruption from temporary
     API failures (like IP rate limiting).
+
+    Also marks permanent failures (transcripts_disabled, video_unavailable, no_transcript)
+    so they are never retried.
     """
     for tutorial in db['tutorials']:
         if tutorial.get('video_id') == video_id:
@@ -322,14 +388,28 @@ def update_tutorial_in_db(db, video_id, metadata, transcript_data):
                 tutorial['transcript_type'] = transcript_data.get('transcript_type')
                 tutorial['transcript_word_count'] = transcript_data.get('word_count')
                 tutorial['transcript_fetched'] = transcript_data.get('fetched_at')
-                # Clear any previous error
+                # Track if translation is needed (non-English transcripts)
+                if transcript_data.get('needs_translation'):
+                    tutorial['needs_translation'] = True
+                elif 'needs_translation' in tutorial:
+                    del tutorial['needs_translation']
+                # Clear any previous error and permanent failure flag
                 if 'transcript_error' in tutorial:
                     del tutorial['transcript_error']
+                if 'transcript_permanent_failure' in tutorial:
+                    del tutorial['transcript_permanent_failure']
             elif transcript_data and transcript_data.get('error'):
+                error_type = transcript_data.get('error')
+                is_permanent = error_type in PERMANENT_FAILURE_ERRORS
+
                 # Error case: ONLY update if we don't already have a successful transcript
                 if not existing_has_transcript:
                     tutorial['has_transcript'] = False
-                    tutorial['transcript_error'] = transcript_data.get('error')
+                    tutorial['transcript_error'] = error_type
+                    # Mark permanent failures so they're never retried
+                    if is_permanent:
+                        tutorial['transcript_permanent_failure'] = True
+                        logger.info(f"  Marked {video_id} as permanent failure: {error_type}")
                 else:
                     # PROTECT existing data - log but don't overwrite
                     logger.warning(f"  Skipping error update for {video_id} - preserving existing transcript")
@@ -376,10 +456,15 @@ def process_all_tutorials(skip_existing=True, fetch_transcripts=True, retry_fail
 
     # Count tutorials that need processing
     if retry_failed:
-        # Only process videos without transcripts (failed or never attempted)
+        # Only process videos without transcripts AND not permanently failed
         to_process = [t for t in tutorials if t.get('video_id') and
-                      not t.get('has_transcript', False)]
-        logger.info(f"Found {len(tutorials)} tutorials, {len(to_process)} need transcript retry")
+                      not t.get('has_transcript', False) and
+                      not t.get('transcript_permanent_failure', False)]
+        # Also count permanent failures for reporting
+        permanent_failures = [t for t in tutorials if t.get('transcript_permanent_failure', False)]
+        logger.info(f"Found {len(tutorials)} tutorials, {len(to_process)} can be retried")
+        if permanent_failures:
+            logger.info(f"Skipping {len(permanent_failures)} permanent failures (transcripts disabled/unavailable)")
     else:
         to_process = [t for t in tutorials if t.get('video_id') and
                       (not skip_existing or not t.get('metadata_fetched'))]
@@ -406,6 +491,9 @@ def process_all_tutorials(skip_existing=True, fetch_transcripts=True, retry_fail
         if retry_failed:
             # In retry mode, skip videos that already have transcripts
             if tutorial.get('has_transcript', False):
+                continue
+            # Also skip permanent failures (transcripts disabled, video unavailable, etc.)
+            if tutorial.get('transcript_permanent_failure', False):
                 continue
         elif skip_existing and tutorial.get('metadata_fetched'):
             # In normal mode, skip already processed videos
@@ -546,16 +634,67 @@ def show_stats():
                 words = t.get('transcript_word_count', 0)
                 print(f"  - {title}: {words:,} words")
 
-    # List tutorials WITHOUT transcripts (candidates for --retry-failed)
+    # Separate permanent failures from retryable failures
     without_transcript = [t for t in tutorials if not t.get('has_transcript', False)]
-    if without_transcript:
+    permanent_failures = [t for t in without_transcript if t.get('transcript_permanent_failure', False)]
+    retryable_failures = [t for t in without_transcript if not t.get('transcript_permanent_failure', False)]
+
+    # Show retryable failures (candidates for --retry-failed)
+    if retryable_failures:
         print("\n" + "-" * 50)
-        print(f"TUTORIALS WITHOUT TRANSCRIPTS ({len(without_transcript)} - use --retry-failed)")
+        print(f"RETRYABLE FAILURES ({len(retryable_failures)} - use --retry-failed)")
         print("-" * 50)
-        for t in without_transcript:
+        for t in retryable_failures:
             title = t.get('title', t.get('video_id', 'Unknown'))[:40]
             error = t.get('transcript_error', 'not attempted')
+            # Truncate long IP blocking error messages
+            if 'YouTube is blocking' in str(error):
+                error = 'IP rate limited (temporary)'
             print(f"  - {title}: {error}")
+
+    # Show permanent failures (will never be retried)
+    if permanent_failures:
+        print("\n" + "-" * 50)
+        print(f"PERMANENT FAILURES ({len(permanent_failures)} - will not retry)")
+        print("-" * 50)
+        for t in permanent_failures:
+            title = t.get('title', t.get('video_id', 'Unknown'))[:40]
+            error = t.get('transcript_error', 'unknown')
+            print(f"  - {title}: {error}")
+
+def mark_permanent_failures():
+    """Mark existing videos with permanent failure errors in the database.
+
+    This is a one-time migration to flag videos that have errors like
+    'transcripts_disabled', 'no_transcript', 'video_unavailable' so they
+    won't be retried in the future.
+    """
+    db = load_db()
+    if not db:
+        print("ERROR: Could not load database")
+        return
+
+    tutorials = db.get('tutorials', [])
+    marked = 0
+
+    for tutorial in tutorials:
+        # Check if already marked
+        if tutorial.get('transcript_permanent_failure'):
+            continue
+
+        # Check if has a permanent failure error
+        error = tutorial.get('transcript_error', '')
+        if error in PERMANENT_FAILURE_ERRORS:
+            tutorial['transcript_permanent_failure'] = True
+            title = tutorial.get('title', tutorial.get('video_id', 'Unknown'))[:40]
+            print(f"  Marked: {title} ({error})")
+            marked += 1
+
+    if marked > 0:
+        save_db(db)
+        print(f"\nMarked {marked} videos as permanent failures.")
+    else:
+        print("No videos needed to be marked.")
 
 # =============================================================================
 # CLI
@@ -577,6 +716,7 @@ def main():
         print("  all --no-transcript  Only fetch metadata, skip transcripts")
         print("  video <id_or_url>    Process a single video")
         print("  stats                Show transcript statistics")
+        print("  mark-permanent       Mark existing permanent failures (one-time)")
         print("\nData Protection:")
         print("  --retry-failed is the SAFE way to retry. It only processes videos")
         print("  that don't have transcripts yet, protecting existing data from")
@@ -597,6 +737,9 @@ def main():
 
     elif cmd == 'stats':
         show_stats()
+
+    elif cmd == 'mark-permanent':
+        mark_permanent_failures()
 
     else:
         print(f"Unknown command: {cmd}")
