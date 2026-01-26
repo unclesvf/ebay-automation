@@ -1,6 +1,6 @@
 # AMBROSE AI Knowledge Base - Project Status
 
-**Last Updated:** January 25, 2026
+**Last Updated:** January 26, 2026
 **Status:** Production Ready
 **Git Branch:** feature/orchestrator-v1
 
@@ -45,6 +45,8 @@ The AMBROSE AI Knowledge Base is a comprehensive system for extracting, organizi
 
 ### Key Configuration
 
+All settings are centralized in `kb_config.py`:
+
 | Setting | Value |
 |---------|-------|
 | LLM Backend | vLLM (configurable in extract_knowledge.py) |
@@ -54,6 +56,7 @@ The AMBROSE AI Knowledge Base is a comprehensive system for extracting, organizi
 | Scripts | C:\Users\scott\ebay-automation\ |
 | Data | D:\AI-Knowledge-Base\ |
 | ChromaDB | C:\Users\scott\ebay-automation\data\knowledge_base\ |
+| Logs | D:\AI-Knowledge-Base\logs\pipeline.log |
 
 ---
 
@@ -151,7 +154,7 @@ python run_pipeline.py --list-stages   # List all stages
 | `ai_content_extractor.py` | Email extraction | Extracts GitHub, HF, YouTube URLs from emails |
 | `scott_folder_organizer.py` | Email organization | Moves emails to 30+ categorized subfolders |
 | `generate_reports.py` | HTML reports | Creates index.html and category reports |
-| `kb_config.py` | Configuration | Shared constants, folder lists, paths |
+| `kb_config.py` | Configuration | Centralized config, logging, RateLimiter, ProgressTracker, backup utilities |
 | `youtube_metadata.py` | YouTube processing | Fetches metadata and transcripts |
 | `transcript_analyzer.py` | Transcript analysis | Extracts tools, techniques, tips |
 | `transcript_search.py` | Search index | Builds FTS5 full-text search |
@@ -196,6 +199,7 @@ Collection: `uncles_wisdom` - Used by both orchestrator actions and server.py
 
 ### System
 - `GET /` - System status
+- `GET /health` - Health check (ChromaDB, search index, Ollama, reports)
 - `GET /status` - Detailed status with timestamps
 - `GET /logs` - Orchestrator log tail
 
@@ -234,6 +238,80 @@ Collection: `uncles_wisdom` - Used by both orchestrator actions and server.py
 | Empty knowledge peek | server.py | Fixed items array building |
 | JSON corruption | ai_content_extractor.py | Added try/except handling |
 | Missing subfolders | scott_folder_organizer.py | Auto-create on demand |
+| Port conflict (Jan 26) | server.py | Fixed port 8000→8001 (vLLM uses 8000) |
+| Missing import (Jan 26) | server.py | Added missing `import requests` |
+| Missing logger (Jan 26) | ai_content_extractor.py | Added logger setup |
+| API port mismatch (Jan 26) | generate_reports.py | Fixed search.html to use port 8001 |
+| Tool data format (Jan 26) | generate_reports.py | Fixed tool_mentions JSON loading |
+| Bare except clauses (Jan 26) | outlook_reader.py, scott_folder_organizer.py | Specified exception types |
+
+---
+
+## New Features (January 26, 2026)
+
+### Centralized Configuration (`kb_config.py`)
+
+All ports, paths, and settings now centralized:
+
+```python
+from kb_config import (
+    API_PORT, VLLM_PORT, OLLAMA_MODEL,
+    get_logger, backup_database, RateLimiter, ProgressTracker
+)
+```
+
+### Health Check Endpoint
+
+Monitor system component health:
+
+```bash
+curl http://localhost:8001/health
+```
+
+Returns status of ChromaDB, search index, Ollama, and reports.
+
+### Rate Limiting
+
+Prevent API throttling with built-in rate limiter:
+
+```python
+from kb_config import RateLimiter
+limiter = RateLimiter(delay=1.5, burst=3)
+for item in items:
+    limiter.wait()
+    api_call(item)
+```
+
+### Progress Tracking
+
+ETA and progress for long operations:
+
+```python
+from kb_config import ProgressTracker
+tracker = ProgressTracker(total=100, description="Processing")
+for item in items:
+    process(item)
+    tracker.update()
+tracker.finish()
+```
+
+### Automatic Database Backup
+
+Backup before major operations:
+
+```python
+from kb_config import backup_database
+backup_database(reason="before_llm")  # Creates timestamped backup
+```
+
+### Incremental Processing
+
+Transcript analyzer only processes new items by default:
+
+```bash
+python transcript_analyzer.py all          # Only new transcripts
+python transcript_analyzer.py all --force  # Reanalyze all
+```
 
 ---
 

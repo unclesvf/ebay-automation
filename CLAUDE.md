@@ -16,7 +16,7 @@ This file provides context for Claude Code sessions.
 ## Active Project: AMBROSE AI Knowledge Base
 
 **Location:** `C:\Users\scott\ebay-automation\` (scripts) + `D:\AI-Knowledge-Base\` (data)
-**Status:** Production Ready - January 25, 2026
+**Status:** Production Ready - January 26, 2026
 **Full Documentation:** `PROJECT_STATUS.md`
 
 ### What It Does
@@ -90,7 +90,7 @@ start chrome "D:\AI-Knowledge-Base\exports\index.html"
 | `extract_knowledge.py` | vLLM/Ollama knowledge extraction |
 | `ai_content_extractor.py` | Email URL extraction |
 | `scott_folder_organizer.py` | Email organization |
-| `kb_config.py` | Shared configuration |
+| `kb_config.py` | Centralized config, logging, utilities |
 | `PROJECT_STATUS.md` | Full technical documentation |
 
 ### ChromaDB Location
