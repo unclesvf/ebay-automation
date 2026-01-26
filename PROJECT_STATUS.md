@@ -136,6 +136,21 @@ python run_pipeline.py --from youtube  # Run from stage onwards
 python run_pipeline.py --list-stages   # List all stages
 ```
 
+### YouTube Transcript Retry (Safe Mode)
+
+```bash
+# Check which videos are missing transcripts
+python youtube_metadata.py stats
+
+# SAFE: Retry only failed videos (protects existing data)
+python youtube_metadata.py all --retry-failed
+
+# CAUTION: --force reprocesses ALL videos (use with care)
+python youtube_metadata.py all --force
+```
+
+**Data Protection:** The `--retry-failed` flag only processes videos that don't have transcripts yet. Existing successful transcripts are NEVER overwritten with error states, protecting against temporary API failures (IP rate limiting).
+
 ---
 
 ## Key Files Reference
@@ -240,6 +255,7 @@ Collection: `uncles_wisdom` - Used by both orchestrator actions and server.py
 | API port mismatch (Jan 26) | generate_reports.py | Fixed search.html to use port 8001 |
 | Tool data format (Jan 26) | generate_reports.py | Fixed tool_mentions JSON loading |
 | Bare except clauses (Jan 26) | outlook_reader.py, scott_folder_organizer.py | Specified exception types |
+| Transcript data loss (Jan 26) | youtube_metadata.py | Added data protection, --retry-failed option |
 
 ---
 
@@ -264,7 +280,7 @@ Monitor system component health:
 curl http://localhost:8001/health
 ```
 
-Returns status of ChromaDB, search index, Ollama, and reports.
+Returns status of ChromaDB, search index, vLLM, and reports.
 
 ### Rate Limiting
 
