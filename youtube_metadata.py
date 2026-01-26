@@ -20,8 +20,12 @@ from kb_config import (
 # Setup logger
 logger = get_logger("YouTubeMetadata")
 
-# Rate limiter for YouTube API calls
-rate_limiter = RateLimiter(delay=1.5, burst=3)  # Be gentle with YouTube
+# Rate limiters for YouTube API calls
+rate_limiter_normal = RateLimiter(delay=1.5, burst=3)  # Normal mode: 1.5s between requests
+rate_limiter_slow = RateLimiter(delay=5.0, burst=1)    # Slow mode: 5s between requests (VPN-safe)
+
+# Active rate limiter (set by CLI)
+rate_limiter = rate_limiter_normal
 
 # Third-party imports
 try:
@@ -422,14 +426,24 @@ def update_tutorial_in_db(db, video_id, metadata, transcript_data):
 # MAIN PROCESSING
 # =============================================================================
 
-def process_all_tutorials(skip_existing=True, fetch_transcripts=True, retry_failed=False):
+def process_all_tutorials(skip_existing=True, fetch_transcripts=True, retry_failed=False, slow_mode=False):
     """Process all tutorials in the database.
 
     Args:
         skip_existing: Skip tutorials that already have metadata fetched
         fetch_transcripts: Whether to fetch transcripts (default True)
         retry_failed: Only process videos that failed to get transcripts (safe retry mode)
+        slow_mode: Use extra-slow rate limiting (5s between requests) for VPN use
     """
+    global rate_limiter
+
+    # Set rate limiter based on mode
+    if slow_mode:
+        rate_limiter = rate_limiter_slow
+        logger.info("SLOW MODE: 5 seconds between requests (VPN-safe)")
+    else:
+        rate_limiter = rate_limiter_normal
+
     logger.info("=" * 70)
     logger.info("YOUTUBE METADATA & TRANSCRIPT EXTRACTOR")
     logger.info("=" * 70)
@@ -713,10 +727,14 @@ def main():
         print("  all                  Process all tutorials in database")
         print("  all --force          Process all (including already fetched)")
         print("  all --retry-failed   SAFE: Only retry videos without transcripts")
+        print("  all --slow           Use slow mode (5s delay) - recommended with VPN")
         print("  all --no-transcript  Only fetch metadata, skip transcripts")
         print("  video <id_or_url>    Process a single video")
         print("  stats                Show transcript statistics")
         print("  mark-permanent       Mark existing permanent failures (one-time)")
+        print("\nRate Limiting:")
+        print("  Normal mode: 1.5s between requests")
+        print("  Slow mode (--slow): 5s between requests - use with VPN to avoid blocks")
         print("\nData Protection:")
         print("  --retry-failed is the SAFE way to retry. It only processes videos")
         print("  that don't have transcripts yet, protecting existing data from")
@@ -729,8 +747,9 @@ def main():
         skip_existing = '--force' not in sys.argv
         fetch_transcripts = '--no-transcript' not in sys.argv
         retry_failed = '--retry-failed' in sys.argv
+        slow_mode = '--slow' in sys.argv
         process_all_tutorials(skip_existing=skip_existing, fetch_transcripts=fetch_transcripts,
-                              retry_failed=retry_failed)
+                              retry_failed=retry_failed, slow_mode=slow_mode)
 
     elif cmd == 'video' and len(sys.argv) > 2:
         process_single_video(sys.argv[2])
