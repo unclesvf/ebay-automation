@@ -111,7 +111,7 @@ class YouTubeAction(Action):
                     self.logger.info(f"  Ingested summary for {vid}")
 
     def _extract_video_ids(self, text: str) -> List[str]:
-        """Extract YouTube IDs from text."""
+        """Extract YouTube IDs from text. YouTube IDs are exactly 11 characters."""
         patterns = [
             r'youtube\.com/watch\?v=([\w\-]+)',
             r'youtu\.be/([\w\-]+)'
@@ -119,7 +119,10 @@ class YouTubeAction(Action):
         ids = set()
         for p in patterns:
             matches = re.findall(p, text)
-            ids.update(matches)
+            for match in matches:
+                video_id = match[:11]  # YouTube IDs are exactly 11 chars
+                if len(video_id) == 11:  # Only accept valid-length IDs
+                    ids.add(video_id)
         return list(ids)
 
     def _get_transcript(self, video_id: str) -> str:

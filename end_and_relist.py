@@ -487,7 +487,7 @@ def get_next_batch(reader, limit=5):
             listings.append({
                 'entry_id': email['entry_id'],
                 'item_id': parsed.item_id,
-                'title': parsed.item_title[:55],
+                'title': parsed.item_title,
                 'price': parsed.new_price,  # None means use current price
                 'relist_current_price': parsed.relist_current_price,
                 'is_price_revision': parsed.is_price_revision,  # True = REVISE, False = END & RELIST
@@ -508,7 +508,7 @@ def get_next_batch(reader, limit=5):
             title_only_listings.append({
                 'entry_id': email['entry_id'],
                 'item_id': parsed.item_id,
-                'title': parsed.item_title[:55],
+                'title': parsed.item_title,
                 'notes': parsed.notes,
                 'blue_text': parsed.blue_text,
                 'red_text': parsed.red_text,

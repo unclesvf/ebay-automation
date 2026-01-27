@@ -116,10 +116,11 @@ Both server.py and orchestrator actions use this same path.
 ### Current Stats (Jan 26, 2026)
 
 - 124 GitHub repos, 45 HuggingFace models, 51 YouTube tutorials (48 with transcripts)
+- 48 LLM-processed transcripts (all complete)
 - 3 permanent transcript failures (disabled by uploaders)
 - 1 non-English transcript (Spanish, translated to English)
-- 45 extracted knowledge files, 36 analysis files, 19 export reports
-- 3 Midjourney sref codes
+- **5,544 extracted items**: 2,179 tips, 882 workflows, 409 prompts, 2,074 insights
+- 8 Midjourney sref codes
 
 ---
 
@@ -180,6 +181,22 @@ The LLM extraction identifies connections between AI techniques and physical fab
 
 ### vLLM Uses Port 8000
 The FastAPI server MUST use port 8001 to avoid conflict with vLLM.
+
+### vLLM Startup from Windows/Git Bash (FIXED)
+Starting vLLM from Git Bash requires special handling:
+- **Path translation**: Use `MSYS_NO_PATHCONV=1` to prevent Git Bash from mangling Linux paths
+- **Session persistence**: Use `tmux` to keep vLLM running after WSL command exits
+- **Full path**: Use `/home/scott/.local/bin/vllm` instead of just `vllm`
+
+Working command:
+```bash
+MSYS_NO_PATHCONV=1 wsl -d Ubuntu-24.04 -- bash -c "tmux new-session -d -s vllm '/home/scott/.local/bin/vllm serve Qwen/Qwen2.5-7B-Instruct --port 8000 --host 0.0.0.0'"
+```
+
+Stop vLLM:
+```bash
+MSYS_NO_PATHCONV=1 wsl -d Ubuntu-24.04 -- bash -c "tmux kill-session -t vllm; pkill -f 'vllm serve'"
+```
 
 ### Cortex ChromaDB Path
 server.py must point to `data/knowledge_base` (same as orchestrator actions), NOT `D:\AI-Knowledge-Base\chromadb`.

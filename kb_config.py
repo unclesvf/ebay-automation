@@ -369,6 +369,7 @@ def is_vllm_running():
 def stop_vllm():
     """Stop vLLM server in WSL2 to free GPU memory."""
     import subprocess
+    import os
     logger = get_logger("vLLM")
 
     if not is_vllm_running():
@@ -378,10 +379,18 @@ def stop_vllm():
     try:
         logger.info("Stopping vLLM server...")
 
-        # First try graceful termination
+        # Kill tmux session first (if using tmux approach)
         subprocess.run(
-            ['wsl', '-d', WSL_DISTRO, '-e', 'bash', '-c', 'pkill -f "vllm serve"'],
-            capture_output=True, text=True, timeout=10
+            ['wsl', '-d', WSL_DISTRO, '--', 'bash', '-c', 'tmux kill-session -t vllm 2>/dev/null'],
+            capture_output=True, text=True, timeout=10,
+            env={**os.environ, 'MSYS_NO_PATHCONV': '1'}
+        )
+
+        # Then kill any remaining vLLM processes
+        subprocess.run(
+            ['wsl', '-d', WSL_DISTRO, '--', 'bash', '-c', 'pkill -f "vllm serve"'],
+            capture_output=True, text=True, timeout=10,
+            env={**os.environ, 'MSYS_NO_PATHCONV': '1'}
         )
         time.sleep(2)
 
@@ -389,8 +398,9 @@ def stop_vllm():
         if is_vllm_running():
             logger.info("Forcing vLLM shutdown...")
             subprocess.run(
-                ['wsl', '-d', WSL_DISTRO, '-e', 'bash', '-c', 'pkill -9 -f "vllm serve"'],
-                capture_output=True, text=True, timeout=10
+                ['wsl', '-d', WSL_DISTRO, '--', 'bash', '-c', 'pkill -9 -f "vllm serve"'],
+                capture_output=True, text=True, timeout=10,
+                env={**os.environ, 'MSYS_NO_PATHCONV': '1'}
             )
             time.sleep(2)
 
@@ -406,8 +416,9 @@ def stop_vllm():
         return False
 
 def start_vllm():
-    """Start vLLM server in WSL2 (background process)."""
+    """Start vLLM server in WSL2 using tmux for persistence."""
     import subprocess
+    import os
     logger = get_logger("vLLM")
 
     if is_vllm_running():
@@ -416,24 +427,35 @@ def start_vllm():
 
     try:
         logger.info(f"Starting vLLM with {VLLM_MODEL}...")
-        # Start vLLM in background using nohup
-        cmd = f'nohup vllm serve {VLLM_MODEL} --port {VLLM_PORT} --host 0.0.0.0 --dtype bfloat16 --enforce-eager --max-model-len 8192 > /tmp/vllm.log 2>&1 &'
+
+        # Kill any existing tmux session
         subprocess.run(
-            ['wsl', '-d', WSL_DISTRO, '-e', 'bash', '-c', cmd],
-            capture_output=True, text=True, timeout=10
+            ['wsl', '-d', WSL_DISTRO, '--', 'bash', '-c', 'tmux kill-session -t vllm 2>/dev/null'],
+            capture_output=True, text=True, timeout=10,
+            env={**os.environ, 'MSYS_NO_PATHCONV': '1'}
+        )
+
+        # Start vLLM in tmux session for persistence
+        # Use full path to vllm since PATH may not be set correctly
+        vllm_cmd = f'/home/scott/.local/bin/vllm serve {VLLM_MODEL} --port {VLLM_PORT} --host 0.0.0.0 2>&1 | tee /tmp/vllm.log'
+        cmd = f"tmux new-session -d -s vllm '{vllm_cmd}'"
+        subprocess.run(
+            ['wsl', '-d', WSL_DISTRO, '--', 'bash', '-c', cmd],
+            capture_output=True, text=True, timeout=10,
+            env={**os.environ, 'MSYS_NO_PATHCONV': '1'}
         )
 
         # Wait for vLLM to start (it takes a while to load the model)
         logger.info("Waiting for vLLM to load model (this may take 30-60 seconds)...")
         import requests
-        for i in range(60):  # Wait up to 60 seconds
+        for i in range(90):  # Wait up to 90 seconds
             time.sleep(1)
             try:
                 response = requests.get(f"{VLLM_URL}/v1/models", timeout=2)
                 if response.status_code == 200:
                     logger.info("vLLM started successfully")
                     return True
-            except:
+            except Exception:
                 pass
 
         logger.warning("vLLM may not have started properly - check /tmp/vllm.log in WSL2")

@@ -69,24 +69,25 @@ All settings are centralized in `kb_config.py`:
 | - With Transcripts | 48 |
 | - Permanent Failures | 3 |
 | - Translated (non-English) | 1 |
-| - LLM Processed | 36 |
-| Midjourney sref Codes | 3 |
+| - LLM Processed | 48 |
+| Midjourney sref Codes | 8 |
 
 ### Extracted Knowledge
 
-| Category | Files |
+| Category | Count |
 |----------|-------|
-| Knowledge files | 45 |
-| Analysis files | 36 |
-| Export reports | 19 |
-| Course materials | 12 |
+| Tips | 2,179 |
+| Workflows | 882 |
+| Prompts | 409 |
+| Insights | 2,074 |
+| **Total Items** | **5,544** |
 
 ### Search Capabilities
 
 | Type | Database | Contents |
 |------|----------|----------|
 | Cortex (semantic) | ChromaDB | 30 items (uncles_wisdom collection) |
-| Transcript (FTS5) | SQLite | 36 videos, 37,258+ searchable segments |
+| Transcript (FTS5) | SQLite | 48 videos, 50,000+ searchable segments |
 
 ---
 
@@ -388,8 +389,9 @@ Say: "start the server" or "start Cortex"
 ### Manual Start
 
 ```bash
-# 1. Start vLLM (in WSL2)
-vllm serve Qwen/Qwen2.5-7B-Instruct --port 8000
+# 1. Start vLLM (from Windows/Git Bash - requires MSYS_NO_PATHCONV and tmux)
+MSYS_NO_PATHCONV=1 wsl -d Ubuntu-24.04 -- bash -c "tmux new-session -d -s vllm '/home/scott/.local/bin/vllm serve Qwen/Qwen2.5-7B-Instruct --port 8000 --host 0.0.0.0 2>&1 | tee /tmp/vllm.log'"
+# Wait 30-60 seconds for model to load (~14GB VRAM)
 
 # 2. Start FastAPI backend
 cd C:\Users\scott\ebay-automation
@@ -401,6 +403,12 @@ npm run dev
 
 # 4. Open browser
 start chrome "http://localhost:5173"
+```
+
+### Stop vLLM (Free GPU Memory)
+```bash
+MSYS_NO_PATHCONV=1 wsl -d Ubuntu-24.04 -- bash -c "tmux kill-session -t vllm; pkill -f 'vllm serve'"
+# Or use: python vllm_manager.py stop
 ```
 
 ### View Static Reports
@@ -416,14 +424,29 @@ start chrome "D:\AI-Knowledge-Base\exports\index.html"
 ```bash
 # Check vLLM status
 curl http://localhost:8000/v1/models
+python vllm_manager.py status
 
-# If not running, start in WSL2:
-wsl -d Ubuntu
-vllm serve Qwen/Qwen2.5-7B-Instruct --port 8000
+# Check GPU memory (should be ~15GB if loaded)
+MSYS_NO_PATHCONV=1 wsl -d Ubuntu-24.04 -- nvidia-smi
+```
 
-# If WSL2 needs restart:
-wsl --shutdown
-# Then relaunch Ubuntu and start vLLM
+### vLLM Not Starting from Windows/Git Bash
+Key issues when starting vLLM from Git Bash:
+1. **Path translation**: Git Bash converts `/home/...` to `C:/Program Files/Git/home/...`
+   - Fix: Use `MSYS_NO_PATHCONV=1` before the wsl command
+2. **Session persistence**: Background processes die when WSL command exits
+   - Fix: Use `tmux` to create a persistent session
+3. **Full path**: The `vllm` command may not be in PATH
+   - Fix: Use full path `/home/scott/.local/bin/vllm`
+
+Working command:
+```bash
+MSYS_NO_PATHCONV=1 wsl -d Ubuntu-24.04 -- bash -c "tmux new-session -d -s vllm '/home/scott/.local/bin/vllm serve Qwen/Qwen2.5-7B-Instruct --port 8000 --host 0.0.0.0'"
+```
+
+### Check vLLM Logs
+```bash
+MSYS_NO_PATHCONV=1 wsl -d Ubuntu-24.04 -- bash -c "cat /tmp/vllm.log | tail -30"
 ```
 
 ### Port 8001 Already in Use
