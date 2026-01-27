@@ -1,6 +1,6 @@
 # AMBROSE AI Knowledge Base - Project Status
 
-**Last Updated:** January 26, 2026
+**Last Updated:** January 27, 2026
 **Status:** Production Ready
 **Git Branch:** feature/orchestrator-v1
 
@@ -35,25 +35,25 @@ The AMBROSE AI Knowledge Base is a comprehensive system for extracting, organizi
 
 ### Port Configuration
 
-| Service | Port | Purpose |
-|---------|------|---------|
-| vLLM | 8000 | Local LLM inference (WSL2) - PRIMARY |
-| FastAPI Server | 8001 | Backend API |
-| Frontend (Vite) | 5173 | React development server |
+| Service         | Port | Purpose                              |
+| --------------- | ---- | ------------------------------------ |
+| vLLM            | 8000 | Local LLM inference (WSL2) - PRIMARY |
+| FastAPI Server  | 8001 | Backend API                          |
+| Frontend (Vite) | 5173 | React development server             |
 
 ### Key Configuration
 
 All settings are centralized in `kb_config.py`:
 
-| Setting | Value |
-|---------|-------|
-| LLM Backend | vLLM (runs in WSL2) |
-| LLM Model | Qwen/Qwen2.5-7B-Instruct |
-| vLLM URL | http://localhost:8000/v1 |
-| Scripts | C:\Users\scott\ebay-automation\ |
-| Data | D:\AI-Knowledge-Base\ |
-| ChromaDB | C:\Users\scott\ebay-automation\data\knowledge_base\ |
-| Logs | D:\AI-Knowledge-Base\logs\pipeline.log |
+| Setting     | Value                                                |
+| ----------- | ---------------------------------------------------- |
+| LLM Backend | vLLM (runs in WSL2)                                  |
+| LLM Model   | Qwen/Qwen2.5-7B-Instruct                             |
+| vLLM URL    | http://localhost:8000/v1                             |
+| Scripts     | C:\Users\scott\ebay-automation\                      |
+| Data        | D:\AI-Knowledge-Base\                                |
+| ChromaDB    | C:\Users\scott\ebay-automation\data\knowledge_base\  |
+| Logs        | D:\AI-Knowledge-Base\logs\pipeline.log               |
 
 ---
 
@@ -61,33 +61,34 @@ All settings are centralized in `kb_config.py`:
 
 ### Content Inventory
 
-| Source | Count |
-|--------|-------|
-| GitHub Repositories | 124 |
-| HuggingFace Models | 45 |
-| YouTube Tutorials | 51 |
-| - With Transcripts | 48 |
-| - Permanent Failures | 3 |
-| - Translated (non-English) | 1 |
-| - LLM Processed | 48 |
-| Midjourney sref Codes | 8 |
+| Source                       | Count |
+| ---------------------------- | ----- |
+| GitHub Repositories          | 124   |
+| HuggingFace Models           | 45    |
+| YouTube Tutorials            | 51    |
+| - With Transcripts           | 48    |
+| - Permanent Failures         | 3     |
+| - Translated (non-English)   | 1     |
+| - LLM Processed              | 48    |
+| Midjourney sref Codes        | 8     |
+| Midjourney Personalize Codes | 14    |
 
 ### Extracted Knowledge
 
-| Category | Count |
-|----------|-------|
-| Tips | 2,179 |
-| Workflows | 882 |
-| Prompts | 409 |
-| Insights | 2,074 |
+| Category        | Count     |
+| --------------- | --------- |
+| Tips            | 2,179     |
+| Workflows       | 882       |
+| Prompts         | 409       |
+| Insights        | 2,074     |
 | **Total Items** | **5,544** |
 
 ### Search Capabilities
 
-| Type | Database | Contents |
-|------|----------|----------|
-| Cortex (semantic) | ChromaDB | 30 items (uncles_wisdom collection) |
-| Transcript (FTS5) | SQLite | 48 videos, 50,000+ searchable segments |
+| Type              | Database | Contents                               |
+| ----------------- | -------- | -------------------------------------- |
+| Cortex (semantic) | ChromaDB | 30 items (uncles_wisdom collection)    |
+| Transcript (FTS5) | SQLite   | 48 videos, 50,000+ searchable segments |
 
 ---
 
@@ -95,12 +96,12 @@ All settings are centralized in `kb_config.py`:
 
 Use these commands to invoke automated workflows:
 
-| Skill | Trigger | Purpose |
-|-------|---------|---------|
-| ambrose-server | "start the server" | Start FastAPI + React frontend |
-| ebay-linda | "process eBay emails" | Process Linda's eBay listing emails |
-| scott-folder | "organize Scott folder" | Organize emails, extract insights |
-| fix-outlook-kb | "fix Outlook KB issue" | Fix Outlook COM after Windows Update |
+| Skill          | Trigger                 | Purpose                              |
+| -------------- | ----------------------- | ------------------------------------ |
+| ambrose-server | "start the server"      | Start FastAPI + React frontend       |
+| ebay-linda     | "process eBay emails"   | Process Linda's eBay listing emails  |
+| scott-folder   | "organize Scott folder" | Organize emails, extract insights    |
+| fix-outlook-kb | "fix Outlook KB issue"  | Fix Outlook COM after Windows Update |
 
 ---
 
@@ -108,20 +109,20 @@ Use these commands to invoke automated workflows:
 
 **Execution Order:** Extract runs BEFORE organize to capture URLs from new emails before they're moved to subfolders.
 
-| # | ID | Script | Description | Timeout |
-|---|-----|--------|-------------|---------|
-| 1 | extract | ai_content_extractor.py | Extract URLs from main folder + subfolders | 10 min |
-| 2 | organize | scott_folder_organizer.py | Move emails to categorized subfolders | 10 min |
-| 3 | youtube | youtube_metadata.py | Fetch video metadata and transcripts | 10 min |
-| 4 | analyze | transcript_analyzer.py | Extract tools, tips from transcripts | 10 min |
-| 5 | translate | translate_transcripts.py | Translate non-English transcripts | 1 hour |
-| 6 | search | transcript_search.py | Build FTS5 full-text search index | 10 min |
-| 7 | llm | extract_knowledge.py | vLLM/QWEN knowledge extraction | 4 hours |
-| 8 | reports | generate_reports.py | Generate HTML reports | 10 min |
-| 9 | gallery | style_code_gallery.py | Generate Midjourney sref gallery | 10 min |
-| 10 | models | model_tracker.py | Generate AI model tracking report | 10 min |
-| 11 | courses | course_materials.py | Generate course materials | 10 min |
-| 12 | sync | sync_to_d_drive.py | Sync scripts and data to D: drive | 10 min |
+| #   | ID        | Script                    | Description                                | Timeout |
+| --- | --------- | ------------------------- | ------------------------------------------ | ------- |
+| 1   | extract   | ai_content_extractor.py   | Extract URLs from main folder + subfolders | 10 min  |
+| 2   | organize  | scott_folder_organizer.py | Move emails to categorized subfolders      | 10 min  |
+| 3   | youtube   | youtube_metadata.py       | Fetch video metadata and transcripts       | 10 min  |
+| 4   | analyze   | transcript_analyzer.py    | Extract tools, tips from transcripts       | 10 min  |
+| 5   | translate | translate_transcripts.py  | Translate non-English transcripts          | 1 hour  |
+| 6   | search    | transcript_search.py      | Build FTS5 full-text search index          | 10 min  |
+| 7   | llm       | extract_knowledge.py      | vLLM/QWEN knowledge extraction             | 4 hours |
+| 8   | reports   | generate_reports.py       | Generate HTML reports                      | 10 min  |
+| 9   | gallery   | style_code_gallery.py     | Generate Midjourney sref gallery           | 10 min  |
+| 10  | models    | model_tracker.py          | Generate AI model tracking report          | 10 min  |
+| 11  | courses   | course_materials.py       | Generate course materials                  | 10 min  |
+| 12  | sync      | sync_to_d_drive.py        | Sync scripts and data to D: drive          | 10 min  |
 
 ### Running the Pipeline
 
@@ -174,6 +175,7 @@ python translate_transcripts.py translate --force
 ```
 
 **Translation Backends:**
+
 - **vLLM (default)** - Uses Qwen2.5-7B-Instruct (already running in WSL2)
 - **opus-mt** - Helsinki-NLP lightweight models (auto-downloads, faster)
 
@@ -205,44 +207,44 @@ python run_pipeline.py --stop-llm
 
 ### Core Scripts (C:\Users\scott\ebay-automation\)
 
-| File | Purpose | Key Functions |
-|------|---------|---------------|
-| `run_pipeline.py` | Master orchestrator | Runs all 12 stages in order |
-| `server.py` | FastAPI backend | /knowledge, /search, /reports, /run endpoints |
-| `extract_knowledge.py` | LLM extraction | Processes transcripts with vLLM |
-| `translate_transcripts.py` | Translation | Translates non-English transcripts |
-| `ai_content_extractor.py` | Email extraction | Extracts GitHub, HF, YouTube URLs from emails |
-| `scott_folder_organizer.py` | Email organization | Moves emails to 30+ categorized subfolders |
-| `generate_reports.py` | HTML reports | Creates index.html and category reports |
-| `kb_config.py` | Configuration | Centralized config, logging, RateLimiter, ProgressTracker, backup utilities |
-| `youtube_metadata.py` | YouTube processing | Fetches metadata and transcripts |
-| `transcript_analyzer.py` | Transcript analysis | Extracts tools, techniques, tips |
-| `transcript_search.py` | Search index | Builds FTS5 full-text search |
-| `style_code_gallery.py` | Sref gallery | Generates Midjourney style reference gallery |
-| `vllm_manager.py` | GPU management | Start/stop vLLM to free GPU memory |
+| File                        | Purpose             | Key Functions                                                               |
+| --------------------------- | ------------------- | --------------------------------------------------------------------------- |
+| `run_pipeline.py`           | Master orchestrator | Runs all 12 stages in order                                                 |
+| `server.py`                 | FastAPI backend     | /knowledge, /search, /reports, /run endpoints                               |
+| `extract_knowledge.py`      | LLM extraction      | Processes transcripts with vLLM                                             |
+| `translate_transcripts.py`  | Translation         | Translates non-English transcripts                                          |
+| `ai_content_extractor.py`   | Email extraction    | Extracts GitHub, HF, YouTube URLs from emails                               |
+| `scott_folder_organizer.py` | Email organization  | Moves emails to 30+ categorized subfolders                                  |
+| `generate_reports.py`       | HTML reports        | Creates index.html and category reports                                     |
+| `kb_config.py`              | Configuration       | Centralized config, logging, RateLimiter, ProgressTracker, backup utilities |
+| `youtube_metadata.py`       | YouTube processing  | Fetches metadata and transcripts                                            |
+| `transcript_analyzer.py`    | Transcript analysis | Extracts tools, techniques, tips                                            |
+| `transcript_search.py`      | Search index        | Builds FTS5 full-text search                                                |
+| `style_code_gallery.py`     | Sref gallery        | Generates Midjourney style reference gallery                                |
+| `vllm_manager.py`           | GPU management      | Start/stop vLLM to free GPU memory                                          |
 
 ### Frontend (C:\Users\scott\ebay-automation\frontend\)
 
-| File | Purpose |
-|------|---------|
-| `src/App.jsx` | Main React app with routing |
-| `src/api.js` | API client (proxies to port 8001) |
-| `src/components/Cortex.jsx` | Semantic search UI (ChromaDB) |
-| `src/components/Dashboard.jsx` | Main dashboard |
-| `src/components/UniversalInsights.jsx` | Insights browser |
-| `src/components/Reports.jsx` | Reports viewer |
-| `vite.config.js` | Vite config (proxy to 8001) |
+| File                                   | Purpose                           |
+| -------------------------------------- | --------------------------------- |
+| `src/App.jsx`                          | Main React app with routing       |
+| `src/api.js`                           | API client (proxies to port 8001) |
+| `src/components/Cortex.jsx`            | Semantic search UI (ChromaDB)     |
+| `src/components/Dashboard.jsx`         | Main dashboard                    |
+| `src/components/UniversalInsights.jsx` | Insights browser                  |
+| `src/components/Reports.jsx`           | Reports viewer                    |
+| `vite.config.js`                       | Vite config (proxy to 8001)       |
 
 ### Data Files (D:\AI-Knowledge-Base\)
 
-| Path | Contents |
-|------|----------|
-| `master_db.json` | Main database (repos, tutorials, styles) |
-| `extracted/` | all_tips.json, all_workflows.json, etc. |
-| `exports/` | HTML reports (index.html is entry point) |
-| `tutorials/transcripts/` | YouTube transcript cache |
-| `tutorials/search_index.db` | FTS5 search database |
-| `backups/` | Timestamped backups |
+| Path                        | Contents                                 |
+| --------------------------- | ---------------------------------------- |
+| `master_db.json`            | Main database (repos, tutorials, styles) |
+| `extracted/`                | all_tips.json, all_workflows.json, etc.  |
+| `exports/`                  | HTML reports (index.html is entry point) |
+| `tutorials/transcripts/`    | YouTube transcript cache                 |
+| `tutorials/search_index.db` | FTS5 search database                     |
+| `backups/`                  | Timestamped backups                      |
 
 ### ChromaDB Location
 
@@ -259,60 +261,74 @@ Collection: `uncles_wisdom` - Used by both orchestrator actions and server.py
 ## API Endpoints
 
 ### System
+
 - `GET /` - System status
 - `GET /health` - Health check (ChromaDB, search index, vLLM, reports)
 - `GET /status` - Detailed status with vLLM check
 - `GET /logs` - Orchestrator log tail
 
 ### Knowledge Base (Cortex) - Semantic Search
+
 - `GET /knowledge?query=X&limit=N` - Semantic search via ChromaDB
 - `GET /knowledge` (no query) - List all items in collection
 
 ### Transcript Search - Full-Text Search
+
 - `GET /search?q=X&channel=Y&topic=Z` - FTS5 transcript search
 - `GET /search/stats` - Search index statistics (videos, segments, channels)
 
 ### Reports
+
 - `GET /reports/list` - List available HTML reports
 - Static files served at `/reports-static/`
 
 ### Pipeline
+
 - `POST /run?profile=X` - Run orchestrator
 - `GET /config` - Get current config
 - `POST /config/dry_run` - Set dry run mode
 
 ### Insights
+
 - `GET /insights?limit=N&sort_by=X` - Universal insights
 
 ---
 
 ## Recent Bug Fixes (January 2026)
 
-| Issue | File | Fix |
-|-------|------|-----|
-| Email content loss | run_pipeline.py | Extract runs BEFORE organize |
-| Cortex ChromaDB mismatch | server.py | Changed to use data\knowledge_base path |
-| vLLM hangs | extract_knowledge.py | Added 5-min timeout per request |
-| LLM stage timeout | run_pipeline.py | Increased to 4 hours |
-| Race condition | server.py | Added threading.Lock() |
-| Silent email errors | ai_content_extractor.py | Proper error logging |
-| Empty knowledge peek | server.py | Fixed items array building |
-| JSON corruption | ai_content_extractor.py | Added try/except handling |
-| Missing subfolders | scott_folder_organizer.py | Auto-create on demand |
-| Port conflict (Jan 26) | server.py | Fixed port 8000→8001 (vLLM uses 8000) |
-| Missing import (Jan 26) | server.py | Added missing `import requests` |
-| Missing logger (Jan 26) | ai_content_extractor.py | Added logger setup |
-| API port mismatch (Jan 26) | generate_reports.py | Fixed search.html to use port 8001 |
-| Tool data format (Jan 26) | generate_reports.py | Fixed tool_mentions JSON loading |
-| Bare except clauses (Jan 26) | outlook_reader.py, scott_folder_organizer.py | Specified exception types |
-| Transcript data loss (Jan 26) | youtube_metadata.py | Added data protection, --retry-failed option |
-| Permanent failure tracking (Jan 26) | youtube_metadata.py | Mark videos that can never have transcripts |
-| Non-English transcripts (Jan 26) | youtube_metadata.py | Fetch any language, mark for translation |
-| vLLM endpoint paths (Jan 26) | translate_transcripts.py | Fixed /v1/ prefix for API calls |
+| Issue                               | File                                         | Fix                                          |
+| ----------------------------------- | -------------------------------------------- | -------------------------------------------- |
+| Email content loss                  | run_pipeline.py                              | Extract runs BEFORE organize                 |
+| Cortex ChromaDB mismatch            | server.py                                    | Changed to use data\knowledge_base path      |
+| vLLM hangs                          | extract_knowledge.py                         | Added 5-min timeout per request              |
+| LLM stage timeout                   | run_pipeline.py                              | Increased to 4 hours                         |
+| Race condition                      | server.py                                    | Added threading.Lock()                       |
+| Silent email errors                 | ai_content_extractor.py                      | Proper error logging                         |
+| Empty knowledge peek                | server.py                                    | Fixed items array building                   |
+| JSON corruption                     | ai_content_extractor.py                      | Added try/except handling                    |
+| Missing subfolders                  | scott_folder_organizer.py                    | Auto-create on demand                        |
+| Port conflict (Jan 26)              | server.py                                    | Fixed port 8000→8001 (vLLM uses 8000)        |
+| Missing import (Jan 26)             | server.py                                    | Added missing `import requests`              |
+| Missing logger (Jan 26)             | ai_content_extractor.py                      | Added logger setup                           |
+| API port mismatch (Jan 26)          | generate_reports.py                          | Fixed search.html to use port 8001           |
+| Tool data format (Jan 26)           | generate_reports.py                          | Fixed tool_mentions JSON loading             |
+| Bare except clauses (Jan 26)        | outlook_reader.py, scott_folder_organizer.py | Specified exception types                    |
+| Transcript data loss (Jan 26)       | youtube_metadata.py                          | Added data protection, --retry-failed option |
+| Permanent failure tracking (Jan 26) | youtube_metadata.py                          | Mark videos that can never have transcripts  |
+| Non-English transcripts (Jan 26)    | youtube_metadata.py                          | Fetch any language, mark for translation     |
+| vLLM endpoint paths (Jan 26)        | translate_transcripts.py                     | Fixed /v1/ prefix for API calls              |
 
 ---
 
-## New Features (January 26, 2026)
+## New Features (January 27, 2026)
+
+### Midjourney Personalization Integration
+
+Full support for extracting and displaying Midjourney Personalization Codes (`--p` and `--personalize`):
+
+1.  **Extraction**: `ai_content_extractor.py` regex updated to capture personality codes.
+2.  **Database**: New schema support in `knowledge_db.py`.
+3.  **Reporting**: dedicated section in `styles.html` with click-to-copy.
 
 ### Centralized Configuration (`kb_config.py`)
 
@@ -379,11 +395,21 @@ python transcript_analyzer.py all          # Only new transcripts
 python transcript_analyzer.py all --force  # Reanalyze all
 ```
 
+### Codebase Refactoring (Jan 2026)
+
+Major cleanup and consolidation of code:
+
+1.  **Centralized Utilities**: Moved timestamp parsing, URL generation, and vLLM management to `kb_config.py`.
+2.  **Hardcoded Paths Removed**: `ai_content_extractor.py` now uses `kb_config` for paths.
+3.  **Search Integration**: `run_orchestrator.py` now automatically triggers `transcript_search.py --index` after orchestration (unless dry run).
+4.  **Deduplication**: Removed duplicate logic from `generate_reports.py` and `transcript_search.py`.
+
 ---
 
 ## Starting the System
 
 ### Quick Start (use skill)
+
 Say: "start the server" or "start Cortex"
 
 ### Manual Start
@@ -406,12 +432,14 @@ start chrome "http://localhost:5173"
 ```
 
 ### Stop vLLM (Free GPU Memory)
+
 ```bash
 MSYS_NO_PATHCONV=1 wsl -d Ubuntu-24.04 -- bash -c "tmux kill-session -t vllm; pkill -f 'vllm serve'"
 # Or use: python vllm_manager.py stop
 ```
 
 ### View Static Reports
+
 ```bash
 start chrome "D:\AI-Knowledge-Base\exports\index.html"
 ```
@@ -421,6 +449,7 @@ start chrome "D:\AI-Knowledge-Base\exports\index.html"
 ## Troubleshooting
 
 ### vLLM Not Responding
+
 ```bash
 # Check vLLM status
 curl http://localhost:8000/v1/models
@@ -431,7 +460,9 @@ MSYS_NO_PATHCONV=1 wsl -d Ubuntu-24.04 -- nvidia-smi
 ```
 
 ### vLLM Not Starting from Windows/Git Bash
+
 Key issues when starting vLLM from Git Bash:
+
 1. **Path translation**: Git Bash converts `/home/...` to `C:/Program Files/Git/home/...`
    - Fix: Use `MSYS_NO_PATHCONV=1` before the wsl command
 2. **Session persistence**: Background processes die when WSL command exits
@@ -440,27 +471,32 @@ Key issues when starting vLLM from Git Bash:
    - Fix: Use full path `/home/scott/.local/bin/vllm`
 
 Working command:
+
 ```bash
 MSYS_NO_PATHCONV=1 wsl -d Ubuntu-24.04 -- bash -c "tmux new-session -d -s vllm '/home/scott/.local/bin/vllm serve Qwen/Qwen2.5-7B-Instruct --port 8000 --host 0.0.0.0'"
 ```
 
 ### Check vLLM Logs
+
 ```bash
 MSYS_NO_PATHCONV=1 wsl -d Ubuntu-24.04 -- bash -c "cat /tmp/vllm.log | tail -30"
 ```
 
 ### Port 8001 Already in Use
+
 ```bash
 netstat -ano | findstr :8001
 taskkill /PID <pid> /F
 ```
 
 ### Cortex Returns No Results
+
 1. Check ChromaDB has items: `python -c "import chromadb; c=chromadb.PersistentClient(path='data/knowledge_base'); print(c.get_collection('uncles_wisdom').count())"`
 2. Verify server.py DB_PATH points to `data/knowledge_base`
 3. Restart server after path changes
 
 ### Outlook COM Errors
+
 - Often caused by Windows Updates
 - Use `fix-outlook-kb` skill to diagnose
 - May need to uninstall specific KB updates

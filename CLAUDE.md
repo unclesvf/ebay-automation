@@ -22,6 +22,7 @@ This file provides context for Claude Code sessions.
 ### What It Does
 
 Full-stack AI knowledge extraction system:
+
 - Extracts GitHub repos, HuggingFace models, YouTube tutorials from Outlook emails
 - Uses local vLLM (Qwen2.5-7B-Instruct in WSL2) for knowledge extraction - no API costs
 - Downloads transcripts, analyzes content, builds ChromaDB vector search
@@ -30,11 +31,11 @@ Full-stack AI knowledge extraction system:
 
 ### Port Configuration (IMPORTANT)
 
-| Service | Port | Notes |
-|---------|------|-------|
-| vLLM | 8000 | Runs in WSL2, do NOT use for FastAPI |
-| FastAPI Server | 8001 | Backend API |
-| Frontend (Vite) | 5173 | React dev server |
+| Service         | Port | Notes                                |
+| --------------- | ---- | ------------------------------------ |
+| vLLM            | 8000 | Runs in WSL2, do NOT use for FastAPI |
+| FastAPI Server  | 8001 | Backend API                          |
+| Frontend (Vite) | 5173 | React dev server                     |
 
 ### Quick Commands
 
@@ -91,46 +92,49 @@ python run_pipeline.py --stop-llm
 
 ### Key Files
 
-| File | Purpose |
-|------|---------|
-| `run_pipeline.py` | Master orchestration script |
-| `server.py` | FastAPI backend (port 8001) |
-| `extract_knowledge.py` | vLLM knowledge extraction |
-| `translate_transcripts.py` | Non-English transcript translation |
-| `youtube_metadata.py` | YouTube transcript fetching |
-| `vllm_manager.py` | Start/stop vLLM, manage GPU memory |
-| `ai_content_extractor.py` | Email URL extraction |
-| `scott_folder_organizer.py` | Email organization |
-| `kb_config.py` | Centralized config, logging, utilities |
-| `PROJECT_STATUS.md` | Full technical documentation |
+| File                        | Purpose                                                           |
+| --------------------------- | ----------------------------------------------------------------- |
+| `run_pipeline.py`           | Master orchestration script                                       |
+| `server.py`                 | FastAPI backend (port 8001)                                       |
+| `extract_knowledge.py`      | vLLM knowledge extraction                                         |
+| `translate_transcripts.py`  | Non-English transcript translation                                |
+| `youtube_metadata.py`       | YouTube transcript fetching                                       |
+| `vllm_manager.py`           | Start/stop vLLM, manage GPU memory                                |
+| `ai_content_extractor.py`   | Email URL extraction                                              |
+| `scott_folder_organizer.py` | Email organization                                                |
+| `kb_config.py`              | Centralized config, URL/timestamp utils, logging, vLLM management |
+| `PROJECT_STATUS.md`         | Full technical documentation                                      |
 
 ### ChromaDB Location
 
 ```
 C:\Users\scott\ebay-automation\data\knowledge_base\
 ```
+
 Collection: `uncles_wisdom` (30 items)
 
 Both server.py and orchestrator actions use this same path.
 
-### Current Stats (Jan 26, 2026)
+### Current Stats (Jan 27, 2026)
 
 - 124 GitHub repos, 45 HuggingFace models, 51 YouTube tutorials (48 with transcripts)
 - 48 LLM-processed transcripts (all complete)
 - 3 permanent transcript failures (disabled by uploaders)
 - 1 non-English transcript (Spanish, translated to English)
 - **5,544 extracted items**: 2,179 tips, 882 workflows, 409 prompts, 2,074 insights
-- 8 Midjourney sref codes
+- 8 Midjourney sref codes, 14 Personalization codes
 
 ---
 
 ## Other Completed Projects
 
 ### eBay Listing Automation Tool
+
 **Location:** `C:\Users\scott\ebay-automation\`
 **Status:** Enhanced - January 20, 2026
 
 Reads emails from Outlook's "Linda" folder, separates items into:
+
 - **TITLE REVISIONS** - Add 'Silver' after 'Sterling', new titles
 - **PRICE REVISIONS** - "Raise to $X" / "Lower to $X"
 - **END & RELIST** - "List new $X" (end listing, Sell Similar)
@@ -142,6 +146,7 @@ python end_and_relist.py --stats  # Show statistics
 ```
 
 ### Budget Forecast Tool
+
 **Location:** `C:\Users\scott\budget-forecast\`
 **Status:** Completed - January 17, 2026
 
@@ -180,31 +185,39 @@ The LLM extraction identifies connections between AI techniques and physical fab
 ## Known Issues & Fixes
 
 ### vLLM Uses Port 8000
+
 The FastAPI server MUST use port 8001 to avoid conflict with vLLM.
 
 ### vLLM Startup from Windows/Git Bash (FIXED)
+
 Starting vLLM from Git Bash requires special handling:
+
 - **Path translation**: Use `MSYS_NO_PATHCONV=1` to prevent Git Bash from mangling Linux paths
 - **Session persistence**: Use `tmux` to keep vLLM running after WSL command exits
 - **Full path**: Use `/home/scott/.local/bin/vllm` instead of just `vllm`
 
 Working command:
+
 ```bash
 MSYS_NO_PATHCONV=1 wsl -d Ubuntu-24.04 -- bash -c "tmux new-session -d -s vllm '/home/scott/.local/bin/vllm serve Qwen/Qwen2.5-7B-Instruct --port 8000 --host 0.0.0.0'"
 ```
 
 Stop vLLM:
+
 ```bash
 MSYS_NO_PATHCONV=1 wsl -d Ubuntu-24.04 -- bash -c "tmux kill-session -t vllm; pkill -f 'vllm serve'"
 ```
 
 ### Cortex ChromaDB Path
+
 server.py must point to `data/knowledge_base` (same as orchestrator actions), NOT `D:\AI-Knowledge-Base\chromadb`.
 
 ### Email Content Loss (FIXED)
+
 Pipeline extract stage runs BEFORE organize stage to capture URLs before emails are moved.
 
 ### Outlook COM Automation
+
 Can hang after Windows Updates. Use `fix-outlook-kb` skill to diagnose and fix.
 
 ---

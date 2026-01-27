@@ -16,6 +16,10 @@ EXPORTS_PATH = r'D:\AI-Knowledge-Base\exports'
 EXTRACTED_PATH = r'D:\AI-Knowledge-Base\extracted'
 SEARCH_INDEX_PATH = r'D:\AI-Knowledge-Base\tutorials\search_index.db'
 
+# Import centralized utils
+from kb_config import make_url, timestamp_to_seconds, generate_youtube_url
+
+
 # =============================================================================
 # HTML TEMPLATES
 # =============================================================================
@@ -96,12 +100,22 @@ HTML_HEAD = """<!DOCTYPE html>
             padding: 1rem 1.5rem;
             border-radius: 8px;
             border: 1px solid var(--border);
+            text-decoration: none;
+            color: inherit;
+            display: block;
+            transition: all 0.2s ease;
+        }}
+
+        .stat:hover {{
+            transform: translateY(-3px);
+            background: var(--bg-secondary);
+            border-color: var(--accent);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }}
 
         .stat-value {{
             font-size: 2rem;
             font-weight: bold;
-            color: var(--accent);
         }}
 
         .stat-label {{
@@ -122,11 +136,16 @@ HTML_HEAD = """<!DOCTYPE html>
             padding: 1.5rem;
             border: 1px solid var(--border);
             transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
         }}
 
         .card:hover {{
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+            border-color: var(--accent);
         }}
 
         .card-title {{
@@ -188,6 +207,40 @@ HTML_HEAD = """<!DOCTYPE html>
         .tag.sref {{
             background: #5865f2;
             color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }}
+
+        .tag.sref:hover {{
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(88, 101, 242, 0.4);
+        }}
+
+        .tag.sref:active {{
+            transform: scale(0.95);
+        }}
+
+        /* Tooltip for copy confirmation */
+        .copy-tooltip {{
+            position: absolute;
+            background: #333;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }}
+
+        .copy-tooltip.visible {{
+            opacity: 1;
         }}
 
         section {{
@@ -452,6 +505,7 @@ HTML_HEAD = """<!DOCTYPE html>
                 <a href="index.html" class="tag" style="text-decoration: none;">Index</a>
                 <a href="tutorials.html" class="tag" style="text-decoration: none;">Tutorials</a>
                 <a href="tips_by_topic.html" class="tag" style="text-decoration: none;">Tips</a>
+                <a href="prompts.html" class="tag" style="text-decoration: none;">Prompts</a>
                 <a href="tool_mentions.html" class="tag" style="text-decoration: none;">Tools</a>
             </div>
         </nav>
@@ -487,6 +541,30 @@ HTML_FOOTER = """
                 }} else {{
                     btn.style.display = 'none';
                 }}
+            }});
+
+            // SREF Copy Functionality
+            document.querySelectorAll('.copy-trigger').forEach(tag => {{
+                tag.addEventListener('click', function(e) {{
+                    e.preventDefault();
+                    const textToCopy = this.getAttribute('data-copy');
+                    
+                    navigator.clipboard.writeText(textToCopy).then(() => {{
+                        // Create tooltip
+                        const tooltip = document.createElement('div');
+                        tooltip.className = 'copy-tooltip visible';
+                        tooltip.textContent = 'Copied!';
+                        this.appendChild(tooltip);
+                        
+                        // Remove after 1.5s
+                        setTimeout(() => {{
+                            tooltip.classList.remove('visible');
+                            setTimeout(() => tooltip.remove(), 200);
+                        }}, 1500);
+                    }}).catch(err => {{
+                        console.error('Failed to copy text: ', err);
+                    }});
+                }});
             }});
         </script>
     </div>
@@ -571,14 +649,7 @@ def ensure_exports_dir():
     """Ensure the exports directory exists."""
     os.makedirs(EXPORTS_PATH, exist_ok=True)
 
-def make_url(path):
-    """Convert a path to a full URL."""
-    if not path:
-        return "#"
-    path = path.strip()
-    if path.startswith('http'):
-        return path
-    return f"https://{path}"
+# Local utility functions removed - using kb_config versions
 
 def format_source(source):
     """Format source information for display."""
@@ -595,41 +666,6 @@ def format_source(source):
 
     return " | ".join(parts) if parts else "Unknown source"
 
-def timestamp_to_seconds(timestamp):
-    """Convert timestamp string (e.g., '5:30' or '1:23:45') to seconds."""
-    if not timestamp:
-        return 0
-
-    # Clean the timestamp - remove non-numeric/colon characters
-    timestamp = ''.join(c for c in str(timestamp) if c.isdigit() or c == ':')
-    if not timestamp:
-        return 0
-
-    parts = timestamp.split(':')
-    try:
-        if len(parts) == 3:  # H:M:S
-            return int(parts[0]) * 3600 + int(parts[1]) * 60 + int(parts[2])
-        elif len(parts) == 2:  # M:S
-            return int(parts[0]) * 60 + int(parts[1])
-        elif len(parts) == 1:  # Just seconds
-            return int(parts[0])
-    except (ValueError, IndexError):
-        return 0
-    return 0
-
-def make_timestamped_url(video_id, timestamp):
-    """Create a YouTube URL with timestamp parameter."""
-    if not video_id:
-        return '#'
-
-    base_url = f"https://youtube.com/watch?v={video_id}"
-
-    if timestamp:
-        seconds = timestamp_to_seconds(timestamp)
-        if seconds > 0:
-            return f"{base_url}&t={seconds}s"
-
-    return base_url
 
 def generate_mermaid_workflow(steps):
     """Generate a Mermaid flowchart from workflow steps."""
@@ -767,12 +803,14 @@ def generate_index_report(db, url_cache):
     hf_count = len(db['repositories']['huggingface'])
     tutorial_count = len(db['tutorials'])
     sref_count = len(db['styles']['midjourney_sref'])
+    personalize_count = len(db['styles'].get('midjourney_personalize', []))
     cache_count = len(url_cache)
 
     # Count extracted knowledge
     extracted_data = load_extracted_knowledge()
     tips_count = len(extracted_data.get('tips', []))
     workflows_count = len(extracted_data.get('workflows', []))
+    prompts_count = len(extracted_data.get('prompts', []))
 
     html = HTML_HEAD.format(title="AI Knowledge Base")
 
@@ -781,30 +819,38 @@ def generate_index_report(db, url_cache):
             <h1>AI Knowledge Base</h1>
             <p class="subtitle">Curated AI resources extracted from X/Twitter posts</p>
             <div class="stats">
-                <div class="stat">
+                <a href="github_repos.html" class="stat">
                     <div class="stat-value">{github}</div>
                     <div class="stat-label">GitHub Repos</div>
-                </div>
-                <div class="stat">
+                </a>
+                <a href="huggingface.html" class="stat">
                     <div class="stat-value">{hf}</div>
                     <div class="stat-label">HuggingFace Models</div>
-                </div>
-                <div class="stat">
+                </a>
+                <a href="tutorials.html" class="stat">
                     <div class="stat-value">{tutorials}</div>
                     <div class="stat-label">Tutorials</div>
-                </div>
-                <div class="stat">
+                </a>
+                <a href="tips_by_topic.html" class="stat">
                     <div class="stat-value">{tips}</div>
                     <div class="stat-label">Tips Extracted</div>
-                </div>
-                <div class="stat">
+                </a>
+                <a href="prompts.html" class="stat">
+                    <div class="stat-value">{prompts}</div>
+                    <div class="stat-label">Prompts</div>
+                </a>
+                <a href="workflows.html" class="stat">
                     <div class="stat-value">{workflows}</div>
                     <div class="stat-label">Workflows</div>
-                </div>
-                <div class="stat">
+                </a>
+                <a href="styles.html" class="stat">
                     <div class="stat-value">{sref}</div>
                     <div class="stat-label">Style Codes</div>
-                </div>
+                </a>
+                <a href="styles.html#personalize" class="stat">
+                    <div class="stat-value">{personalize}</div>
+                    <div class="stat-label">Personalize Codes</div>
+                </a>
             </div>
             <div class="nav-links">
                 <a href="github_repos.html" class="nav-link">GitHub Repos</a>
@@ -812,6 +858,7 @@ def generate_index_report(db, url_cache):
                 <a href="tutorials.html" class="nav-link">Tutorials</a>
                 <a href="styles.html" class="nav-link">Style Codes</a>
                 <a href="tips_by_topic.html" class="nav-link">Tips</a>
+                <a href="prompts.html" class="nav-link">Prompts</a>
                 <a href="workflows.html" class="nav-link">Workflows</a>
                 <a href="tool_mentions.html" class="nav-link">Tools</a>
                 <a href="search.html" class="nav-link">Search</a>
@@ -823,8 +870,10 @@ def generate_index_report(db, url_cache):
         hf=hf_count,
         tutorials=tutorial_count,
         tips=tips_count,
+        prompts=prompts_count,
         workflows=workflows_count,
-        sref=sref_count
+        sref=sref_count,
+        personalize=personalize_count
     )
 
     # Recent additions section
@@ -885,6 +934,96 @@ def generate_index_report(db, url_cache):
             </div>
         </section>
         """
+
+    # Recent Tutorials (New)
+    if db['tutorials']:
+        html += """
+        <section>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; border-bottom: 2px solid var(--accent); padding-bottom: 0.5rem;">
+                <h2 style="border:none; margin:0;">Recent Tutorials</h2>
+                <a href="tutorials.html" class="tag">View All {count}</a>
+            </div>
+            <div class="card-grid">
+        """.format(count=len(db['tutorials']))
+
+        for tutorial in db['tutorials'][:6]:
+            url = make_url(tutorial['url'])
+            html += f"""
+                <div class="card">
+                    <div class="card-title">
+                        <a href="{url}" target="_blank">{tutorial.get('title') or 'Unknown Tutorial'}</a>
+                    </div>
+                    <div class="card-meta">
+                        <span class="tag youtube">YouTube</span>
+                        {tutorial.get('date_found', 'Unknown')}
+                    </div>
+                    <div class="card-source">
+                        {format_source(tutorial.get('source', {}))}
+                    </div>
+                </div>
+            """
+        html += "</div></section>"
+
+    # Recent Workflows (New)
+    workflows = extracted_data.get('workflows', [])
+    if workflows:
+        html += """
+        <section>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; border-bottom: 2px solid var(--accent); padding-bottom: 0.5rem;">
+                <h2 style="border:none; margin:0;">Recent Workflows</h2>
+                <a href="workflows.html" class="tag">View All {count}</a>
+            </div>
+            <div class="card-grid">
+        """.format(count=len(workflows))
+
+        for wf in workflows[:6]:
+            video_title = wf.get('source_title', 'Unknown Source')
+            html += f"""
+                <div class="card">
+                    <div class="card-title">
+                       {wf.get('name', 'Unnamed Workflow')}
+                    </div>
+                    <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                        {len(wf.get('steps', []))} steps • {len(wf.get('prerequisites', []))} prereqs
+                    </p>
+                    <div class="card-source">
+                        Source: {video_title}
+                    </div>
+                </div>
+            """
+        html += "</div></section>"
+
+    # Random Tips (New)
+    tips = extracted_data.get('tips', [])
+    if tips:
+        import random
+        # Show 6 random tips to keep it fresh
+        display_tips = random.sample(tips, min(6, len(tips)))
+        
+        html += """
+        <section>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; border-bottom: 2px solid var(--accent); padding-bottom: 0.5rem;">
+                <h2 style="border:none; margin:0;">Highlighted Tips</h2>
+                <a href="tips_by_topic.html" class="tag">Browse All {count}</a>
+            </div>
+            <div class="card-grid">
+        """.format(count=len(tips))
+
+        for tip in display_tips:
+            video_title = tip.get('source_title', 'Unknown Source')
+            category = tip.get('category', 'General')
+            html += f"""
+                <div class="card">
+                    <div style="flex:1;">
+                        <span class="tag" style="margin-bottom:0.5rem;">{category}</span>
+                        <p>{tip.get('text', '')[:150] + '...' if len(tip.get('text', '')) > 150 else tip.get('text', '')}</p>
+                    </div>
+                    <div class="card-source">
+                        Source: {video_title}
+                    </div>
+                </div>
+            """
+        html += "</div></section>"
 
     html += HTML_FOOTER.format(date=datetime.now().strftime('%Y-%m-%d %H:%M'))
 
@@ -1040,29 +1179,39 @@ def generate_tutorials_report(db):
     return html
 
 def generate_styles_report(db):
-    """Generate Midjourney style codes report."""
+    sref_codes = db['styles']['midjourney_sref']
+    personalize_codes = db['styles'].get('midjourney_personalize', [])
+
     html = HTML_HEAD.format(title="Style Codes - AI Knowledge Base")
 
     html += """
         <header>
-            <h1>Midjourney Style Codes</h1>
-            <p class="subtitle">{count} --sref codes discovered</p>
+            <h1>Midjourney Codes</h1>
+            <p class="subtitle">{sref_count} --sref codes, {personalize_count} --p codes discovered</p>
             <div class="nav-links">
                 <a href="index.html" class="nav-link">Back to Index</a>
+                <a href="#sref" class="nav-link">Style Refs</a>
+                <a href="#personalize" class="nav-link">Personalize</a>
             </div>
         </header>
-    """.format(count=len(db['styles']['midjourney_sref']))
+    """.format(
+        sref_count=len(sref_codes),
+        personalize_count=len(personalize_codes)
+    )
 
     html += """
-        <section>
+        <section id="sref">
+            <h2>Style References (--sref)</h2>
             <div class="card-grid">
     """
 
-    for style in db['styles']['midjourney_sref']:
+    for style in sref_codes:
         html += f"""
                 <div class="card">
                     <div class="card-title">
-                        <span class="tag sref">--sref {style.get('code', 'Unknown')}</span>
+                        <span class="tag sref copy-trigger" data-copy="{style.get('code', '')}" title="Click to copy">
+                            --sref {style.get('code', 'Unknown')} 📋
+                        </span>
                     </div>
                     <div class="card-meta">
                         Found: {style.get('date_found', 'Unknown')}
@@ -1074,8 +1223,38 @@ def generate_styles_report(db):
                 </div>
         """
 
-    if not db['styles']['midjourney_sref']:
+    if not sref_codes:
         html += '<div class="empty-state">No style codes found yet.</div>'
+
+    html += """
+            </div>
+        </section>
+
+        <section id="personalize">
+            <h2>Personalization Codes (--p)</h2>
+            <div class="card-grid">
+    """
+
+    for p_code in personalize_codes:
+        html += f"""
+                <div class="card">
+                    <div class="card-title">
+                        <span class="tag sref copy-trigger" data-copy="{p_code.get('code', '')}" title="Click to copy">
+                            --p {p_code.get('code', 'Unknown')} 📋
+                        </span>
+                    </div>
+                    <div class="card-meta">
+                        Found: {p_code.get('date_found', 'Unknown')}
+                    </div>
+                    {f'<p>{p_code["description"]}</p>' if p_code.get('description') else ''}
+                    <div class="card-source">
+                        {format_source(p_code.get('source', {}))}
+                    </div>
+                </div>
+        """
+
+    if not personalize_codes:
+        html += '<div class="empty-state">No personalization codes found yet.</div>'
 
     html += """
             </div>
@@ -1206,7 +1385,7 @@ def generate_tips_by_topic_report(extracted_data):
             timestamp = tip.get('timestamp_approx', '')
 
             # Create timestamped URL for direct jump to video moment
-            video_url = make_timestamped_url(video_id, timestamp)
+            video_url = generate_youtube_url(video_id, timestamp)
 
             # Timestamp link that jumps directly to that moment
             timestamp_html = ''
@@ -1222,7 +1401,7 @@ def generate_tips_by_topic_report(extracted_data):
                         {timestamp_html}
                     </div>
                     <div class="card-source">
-                        <a href="{make_timestamped_url(video_id, None)}" target="_blank">{video_title}</a>
+                        <a href="{generate_youtube_url(video_id, None)}" target="_blank">{video_title}</a>
                     </div>
                 </div>
             """
@@ -1898,6 +2077,254 @@ def generate_search_page():
 
     return html
 
+def generate_prompts_report(extracted_data):
+    """Generate System Prompts report with Search & Organization."""
+    html = HTML_HEAD.format(title="Prompts - AI Knowledge Base")
+    
+    # Custom CSS for this page
+    html = html.replace('</style>', """
+        .controls-bar {
+            background: var(--bg-secondary);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .search-input {
+            flex: 1;
+            padding: 0.8rem;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+        
+        .view-toggle {
+            display: flex;
+            background: var(--bg-primary);
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+        
+        .toggle-btn {
+            padding: 0.8rem 1.2rem;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .toggle-btn.active {
+            background: var(--accent);
+            color: white;
+        }
+        
+        .group-header {
+            width: 100%;
+            margin: 2rem 0 1rem 0;
+            padding: 0.75rem 1rem;
+            border-bottom: 2px solid var(--border);
+            color: var(--accent);
+            background: var(--bg-secondary);
+            border-radius: 6px;
+            cursor: pointer;
+            display: none; /* Hidden by default */
+            align-items: center;
+            justify-content: space-between;
+            transition: background 0.2s;
+        }
+
+        .group-header:hover {
+            background: var(--bg-card);
+        }
+
+        .group-header::after {
+            content: '▼';
+            font-size: 0.8rem;
+            transition: transform 0.3s;
+        }
+
+        .group-header.collapsed::after {
+            transform: rotate(-90deg);
+        }
+        
+        .grid-view .group-header { display: none; }
+        .list-view .group-header { display: block; }
+        
+        .tag.purpose {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+    </style>""")
+    
+    prompts = extracted_data.get('prompts', [])
+    
+    html += """
+        <header>
+            <h1>System Prompts</h1>
+            <p class="subtitle">{count} prompts extracted from tutorials</p>
+            <div class="nav-links">
+                <a href="index.html" class="nav-link">Back to Index</a>
+                <a href="tips_by_topic.html" class="nav-link">Tips</a>
+                <a href="workflows.html" class="nav-link">Workflows</a>
+            </div>
+        </header>
+
+        <div class="controls-bar">
+            <input type="text" id="promptSearch" class="search-input" placeholder="Search prompts by text, purpose, or source...">
+            <div class="view-toggle">
+                <button class="toggle-btn active" onclick="setView('grid')" id="btnGrid">Grid View</button>
+                <button class="toggle-btn" onclick="setView('list')" id="btnList">Group by Source</button>
+            </div>
+        </div>
+        
+        <section id="promptContainer" class="card-grid grid-view">
+    """.format(count=len(prompts))
+    
+    # Sort prompts by source for the grouped view
+    sorted_prompts = sorted(prompts, key=lambda x: x.get('source_title', 'Unknown'))
+    
+    current_source = None
+    
+    for prompt in sorted_prompts:
+        video_title = prompt.get('source_title', 'Unknown Source')
+        video_id = prompt.get('source_video', '')
+        video_url = f"https://youtube.com/watch?v={video_id}" if video_id else '#'
+        text = prompt.get('prompt', '') or prompt.get('text', '') or prompt.get('content', '')
+        purpose = prompt.get('purpose', 'General Prompt')
+        
+        # Determine source group header
+        source_header = ""
+        # Use a safe identifier for the source
+        safe_source_id = ''.join(c if c.isalnum() else '_' for c in video_title)
+        
+        if video_title != current_source:
+            source_header = f'''
+                <div class="group-header" onclick="toggleGroup('{safe_source_id}')">
+                    <span>{video_title}</span>
+                </div>
+            '''
+            current_source = video_title
+        
+        # Escape quotes for data attribute
+        safe_text = text.replace('"', '&quot;')
+        
+        html += f"""
+            {source_header}
+            <div class="card prompt-card group-{safe_source_id}" data-text="{text.lower()}" data-purpose="{purpose.lower()}" data-source="{video_title.lower()}">
+                <div class="card-title" style="display:flex; justify-content:space-between; align-items:flex-start;">
+                    <span>{prompt.get('name', 'Untitled Prompt')}</span>
+                    <button class="tag sref copy-trigger" data-copy="{safe_text}" title="Copy Prompt">
+                        📋 Copy
+                    </button>
+                </div>
+                
+                <div style="margin-bottom: 0.5rem;">
+                    <span class="tag purpose">{purpose}</span>
+                </div>
+                
+                <div style="background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 6px; margin: 1rem 0; font-family: monospace; white-space: pre-wrap; font-size: 0.9rem; border: 1px solid var(--border);">
+{text[:500] + '...' if len(text) > 500 else text}
+                </div>
+                
+                <div class="card-source">
+                    Source: <a href="{video_url}" target="_blank">{video_title}</a>
+                </div>
+            </div>
+        """
+        
+    if not prompts:
+        html += '<div class="empty-state">No prompts extracted yet.</div>'
+        
+    html += """
+        </section>
+
+        <script>
+            function setView(mode) {
+                const container = document.getElementById('promptContainer');
+                const btnGrid = document.getElementById('btnGrid');
+                const btnList = document.getElementById('btnList');
+                
+                if (mode === 'grid') {
+                    container.className = 'card-grid grid-view';
+                    btnGrid.classList.add('active');
+                    btnList.classList.remove('active');
+                } else {
+                    container.className = 'card-grid list-view'; // We explicitly removed 'grid-view' 
+                    // To make grouping work visually we might need to break the grid.
+                    // Actually, card-grid uses grid-template-columns: repeat(auto-fill, ...).
+                    // To show headers correctly in flow, we need to change display to block or flex col.
+                    container.style.display = 'block'; 
+                    btnGrid.classList.remove('active');
+                    btnList.classList.add('active');
+                }
+                
+                if (mode === 'grid') {
+                     container.style.display = 'grid';
+                }
+            }
+            
+            function toggleGroup(groupId) {
+                const groupCards = document.querySelectorAll(`.group-${groupId}`);
+                // Find all header elements that toggle this group using array from
+                const headers = Array.from(document.querySelectorAll('.group-header')).filter(h => h.getAttribute('onclick') && h.getAttribute('onclick').includes(groupId));
+                
+                let isCollapsed = false;
+                if (headers.length > 0) {
+                     headers[0].classList.toggle('collapsed');
+                     isCollapsed = headers[0].classList.contains('collapsed');
+                }
+                
+                groupCards.forEach(card => {
+                    if (isCollapsed) {
+                        card.style.display = 'none';
+                    } else {
+                        card.style.display = 'flex';
+                    }
+                });
+            }
+
+            document.getElementById('promptSearch').addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase();
+                const cards = document.querySelectorAll('.prompt-card');
+                const headers = document.querySelectorAll('.group-header');
+                
+                // Hide/Show cards
+                cards.forEach(card => {
+                    const text = card.getAttribute('data-text') || '';
+                    const purpose = card.getAttribute('data-purpose') || '';
+                    const source = card.getAttribute('data-source') || '';
+                    
+                    if (text.includes(query) || purpose.includes(query) || source.includes(query)) {
+                        card.style.display = 'flex';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+                
+                // Manage headers in list mode (simple logic: hide if all children hidden? 
+                // Too complex for pure JS without structure. 
+                // For now, let's just leave headers. Better: use CSS grid logic in future.
+                // Or simplified: in Search mode, force Grid view to avoid empty headers.)
+                 if (query.length > 0) {
+                     setView('grid'); // Force grid on search to ignore grouping mess
+                 }
+            });
+        </script>
+    """
+    
+    html += HTML_FOOTER.format(date=datetime.now().strftime('%Y-%m-%d %H:%M'))
+    
+    return html
+
 # =============================================================================
 # MAIN
 # =============================================================================
@@ -1935,6 +2362,7 @@ def generate_all_reports():
     reports.extend([
         ('tips_by_topic.html', generate_tips_by_topic_report(extracted_data)),
         ('workflows.html', generate_workflows_report(extracted_data)),
+        ('prompts.html', generate_prompts_report(extracted_data)),
         ('tool_mentions.html', generate_tool_mentions_report(extracted_data, db)),
         ('search.html', generate_search_page()),
     ])

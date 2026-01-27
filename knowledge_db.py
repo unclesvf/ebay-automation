@@ -57,7 +57,9 @@ def create_empty_db():
         "tutorials": [],
         "styles": {
             "midjourney_sref": [],
-            "midjourney_style": []
+            "midjourney_sref": [],
+            "midjourney_style": [],
+            "midjourney_personalize": []
         },
         "prompts": {
             "system_prompts": [],
@@ -74,6 +76,8 @@ def update_total_entries(db):
         len(db['tutorials']) +
         len(db['styles']['midjourney_sref']) +
         len(db['styles'].get('midjourney_style', [])) +
+        len(db['styles'].get('midjourney_style', [])) +
+        len(db['styles'].get('midjourney_personalize', [])) +
         len(db['models']['tts']) +
         len(db['models']['image_cloud']) +
         len(db['models']['image_local']) +
@@ -178,6 +182,28 @@ def add_sref_code(db, code, description=None, source=None):
     db['styles']['midjourney_sref'].append(entry)
     return True, f"Added --sref {code}"
 
+def add_personalize_code(db, code, description=None, source=None):
+    """Add a Midjourney --p code to the database."""
+    code = str(code)
+
+    # Initialize list if not present (migration support)
+    if 'midjourney_personalize' not in db['styles']:
+        db['styles']['midjourney_personalize'] = []
+
+    for style in db['styles']['midjourney_personalize']:
+        if style['code'] == code:
+            return False, "Personalization code already exists"
+
+    entry = {
+        'code': code,
+        'description': description,
+        'date_found': datetime.now().strftime('%Y-%m-%d'),
+        'source': source or {}
+    }
+
+    db['styles']['midjourney_personalize'].append(entry)
+    return True, f"Added --p {code}"
+
 def add_model(db, model_type, name, url=None, local_capable=False, notes=None, source=None):
     """Add an AI model to the database."""
     valid_types = ['tts', 'image_cloud', 'image_local']
@@ -262,6 +288,12 @@ def search_all(db, query, case_sensitive=False):
     for style in db['styles']['midjourney_sref']:
         if matches(style.get('code')) or matches(style.get('description')):
             results['styles'].append(style)
+
+    # Search personalize codes
+    if 'midjourney_personalize' in db['styles']:
+        for style in db['styles']['midjourney_personalize']:
+            if matches(style.get('code')) or matches(style.get('description')):
+                results['styles'].append({**style, 'type': 'personalize'})
 
     # Search models
     for model_type in ['tts', 'image_cloud', 'image_local']:

@@ -4,8 +4,8 @@ Extracts GitHub repos, HuggingFace models, YouTube tutorials, Midjourney style c
 and AI model references from Scott folder emails.
 """
 import sys
-sys.path.insert(0, r'C:\Users\scott\ebay-automation')
 sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+
 
 from outlook_reader import OutlookReader
 from datetime import datetime
@@ -27,7 +27,13 @@ _cache_file = r'D:\AI-Knowledge-Base\url_cache.json'
 
 # Paths
 MASTER_DB_PATH = r'D:\AI-Knowledge-Base\master_db.json'
-TWITTER_JSON_PATH = r'C:\Users\scott\ebay-automation\twitter_data_extract.json'
+# Use config for path if available, or fallback
+try:
+    from kb_config import SOURCE_DIR
+    TWITTER_JSON_PATH = os.path.join(SOURCE_DIR, 'twitter_data_extract.json')
+except ImportError:
+    TWITTER_JSON_PATH = r'C:\Users\scott\ebay-automation\twitter_data_extract.json'
+
 
 # =============================================================================
 # EXTRACTION PATTERNS
@@ -49,6 +55,7 @@ PATTERNS = {
     'sref': re.compile(r'--sref\s+(\d+)', re.IGNORECASE),
     'style': re.compile(r'--style\s+(\w+)', re.IGNORECASE),
     'niji': re.compile(r'--niji\s*(\d*)', re.IGNORECASE),
+    'personalize': re.compile(r'--(?:p|personalize)\s+([a-z0-9]+)', re.IGNORECASE),
 
     # Full URL extraction (for finding all URLs in text)
     'any_url': re.compile(r'https?://[^\s<>"\']+', re.IGNORECASE),
@@ -482,7 +489,8 @@ def extract_style_codes(text):
     codes = {
         'sref': [],
         'style': [],
-        'niji': []
+        'niji': [],
+        'personalize': []
     }
 
     for match in PATTERNS['sref'].finditer(text):
@@ -494,6 +502,9 @@ def extract_style_codes(text):
     for match in PATTERNS['niji'].finditer(text):
         version = match.group(1) or '6'
         codes['niji'].append(version)
+
+    for match in PATTERNS['personalize'].finditer(text):
+        codes['personalize'].append(match.group(1))
 
     return codes
 
@@ -680,12 +691,29 @@ def add_to_db(db, extractions, source_text=""):
             })
             added += 1
 
+    # Add Midjourney personalize codes
+    # Ensure list exists (for migration)
+    if 'midjourney_personalize' not in db['styles']:
+        db['styles']['midjourney_personalize'] = []
+
+    for code in extractions['style_codes']['personalize']:
+        existing_codes = [s['code'] for s in db['styles']['midjourney_personalize']]
+        if code not in existing_codes:
+            db['styles']['midjourney_personalize'].append({
+                'code': code,
+                'description': None,
+                'date_found': datetime.now().strftime('%Y-%m-%d'),
+                'source': extractions.get('source', {})
+            })
+            added += 1
+
     # Update total entries
     db['metadata']['total_entries'] = (
         len(db['repositories']['github']) +
         len(db['repositories']['huggingface']) +
         len(db['tutorials']) +
         len(db['styles']['midjourney_sref']) +
+        len(db['styles'].get('midjourney_personalize', [])) +
         len(db['models']['tts']) +
         len(db['models']['image_cloud']) +
         len(db['models']['image_local'])
@@ -750,14 +778,16 @@ def process_existing_json():
     print(f"GitHub repos: {len(db['repositories']['github'])}")
     print(f"HuggingFace refs: {len(db['repositories']['huggingface'])}")
     print(f"YouTube tutorials: {len(db['tutorials'])}")
+    print(f"YouTube tutorials: {len(db['tutorials'])}")
     print(f"Midjourney sref codes: {len(db['styles']['midjourney_sref'])}")
+    print(f"Midjourney customize codes: {len(db['styles'].get('midjourney_personalize', []))}")
 
 def process_subfolder(subfolder, db):
     """
     Process a single Outlook subfolder for AI content extraction.
     Returns a dict with stats: {emails, github, hf, yt, sref, added}
     """
-    stats = {'emails': 0, 'github': 0, 'hf': 0, 'yt': 0, 'sref': 0, 'added': 0}
+    stats = {'emails': 0, 'github': 0, 'hf': 0, 'yt': 0, 'sref': 0, 'pers': 0, 'added': 0}
     subfolder_name = subfolder.Name
 
     items = subfolder.Items
@@ -850,7 +880,9 @@ def process_subfolder(subfolder, db):
             stats['github'] += len(extractions['github_repos'])
             stats['hf'] += len(extractions['huggingface_refs'])
             stats['yt'] += len(extractions['youtube_videos'])
+            stats['yt'] += len(extractions['youtube_videos'])
             stats['sref'] += len(extractions['style_codes']['sref'])
+            stats['pers'] += len(extractions['style_codes']['personalize'])
 
             added = add_to_db(db, extractions, text)
             stats['added'] += added
@@ -902,8 +934,9 @@ def process_outlook_emails(folders_to_process=None):
     # =========================================================================
     # STEP 1: Process MAIN Scott folder first (new emails before organization)
     # =========================================================================
+    # =========================================================================
     main_folder_count = scott_folder.Items.Count
-    main_folder_stats = {'emails': 0, 'github': 0, 'hf': 0, 'yt': 0, 'sref': 0, 'added': 0}
+    main_folder_stats = {'emails': 0, 'github': 0, 'hf': 0, 'yt': 0, 'sref': 0, 'pers': 0, 'added': 0}
 
     if main_folder_count > 0:
         print(f"\n>>> MAIN SCOTT FOLDER: {main_folder_count} new emails <<<")
@@ -951,11 +984,13 @@ def process_outlook_emails(folders_to_process=None):
     print("\n" + "=" * 80)
     print("SUMMARY BY FOLDER")
     print("=" * 80)
-    print(f"{'Folder':<25} {'Emails':>7} {'GitHub':>8} {'HF':>6} {'YT':>6} {'Sref':>6} {'Added':>7}")
+    print("=" * 80)
+    print(f"{'Folder':<25} {'Emails':>7} {'GitHub':>8} {'HF':>6} {'YT':>6} {'Sref':>6} {'Pers':>6} {'Added':>7}")
+    print("-" * 80)
     print("-" * 80)
 
     for folder_name, stats in folder_stats.items():
-        print(f"{folder_name:<25} {stats['emails']:>7} {stats['github']:>8} {stats['hf']:>6} {stats['yt']:>6} {stats['sref']:>6} {stats['added']:>7}")
+        print(f"{folder_name:<25} {stats['emails']:>7} {stats['github']:>8} {stats['hf']:>6} {stats['yt']:>6} {stats['sref']:>6} {stats['pers']:>6} {stats['added']:>7}")
 
     print("-" * 80)
     totals = {
@@ -964,8 +999,9 @@ def process_outlook_emails(folders_to_process=None):
         'hf': sum(s['hf'] for s in folder_stats.values()),
         'yt': sum(s['yt'] for s in folder_stats.values()),
         'sref': sum(s['sref'] for s in folder_stats.values()),
+        'pers': sum(s['pers'] for s in folder_stats.values()),
     }
-    print(f"{'TOTAL':<25} {totals['emails']:>7} {totals['github']:>8} {totals['hf']:>6} {totals['yt']:>6} {totals['sref']:>6} {total_added:>7}")
+    print(f"{'TOTAL':<25} {totals['emails']:>7} {totals['github']:>8} {totals['hf']:>6} {totals['yt']:>6} {totals['sref']:>6} {totals['pers']:>6} {total_added:>7}")
 
     print("\n" + "-" * 80)
     print("DATABASE TOTALS")
@@ -1021,6 +1057,12 @@ def show_stats():
         print(f"    - --sref {style['code']}")
     if len(db['styles']['midjourney_sref']) > 5:
         print(f"    ... and {len(db['styles']['midjourney_sref']) - 5} more")
+
+    print(f"\n  Midjourney personalize codes: {len(db['styles'].get('midjourney_personalize', []))}")
+    for style in db['styles'].get('midjourney_personalize', [])[:5]:
+        print(f"    - --p {style['code']}")
+    if len(db['styles'].get('midjourney_personalize', [])) > 5:
+        print(f"    ... and {len(db['styles']['midjourney_personalize']) - 5} more")
 
 def process_with_tco_expansion():
     """Process emails with t.co link expansion enabled."""
