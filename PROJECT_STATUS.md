@@ -27,7 +27,7 @@ The AMBROSE AI Knowledge Base is a comprehensive system for extracting, organizi
 ├─────────────────────────────────────────────────────────────────────────────┤
 │  Data Storage                                                                │
 │  - ChromaDB: Vector embeddings (30 items in uncles_wisdom)                  │
-│  - SQLite FTS5: Transcript search (32 videos, 37,258 segments)              │
+│  - SQLite FTS5: Transcript search (48 videos, 50,000+ segments)             │
 │  - JSON: master_db.json, extracted knowledge files                          │
 │  - D:\AI-Knowledge-Base\: Reports, transcripts, exports                     │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -66,7 +66,9 @@ All settings are centralized in `kb_config.py`:
 | GitHub Repositories | 124 |
 | HuggingFace Models | 45 |
 | YouTube Tutorials | 51 |
-| - With Transcripts | 36 |
+| - With Transcripts | 48 |
+| - Permanent Failures | 3 |
+| - Translated (non-English) | 1 |
 | - LLM Processed | 36 |
 | Midjourney sref Codes | 3 |
 
@@ -176,6 +178,26 @@ python translate_transcripts.py translate --force
 
 Non-English transcripts are marked with `needs_translation: true` and automatically processed in the pipeline's translate stage.
 
+### vLLM GPU Management
+
+vLLM runs in WSL2 and holds the model in GPU memory (~14GB for Qwen2.5-7B). Use these commands to manage GPU resources:
+
+```bash
+# Check vLLM status
+python vllm_manager.py status
+
+# Stop vLLM (free GPU memory for other tasks)
+python vllm_manager.py stop
+
+# Start vLLM
+python vllm_manager.py start
+
+# Auto-stop after pipeline completes
+python run_pipeline.py --stop-llm
+```
+
+**Note:** vLLM must be running for translation and LLM knowledge extraction stages.
+
 ---
 
 ## Key Files Reference
@@ -196,6 +218,7 @@ Non-English transcripts are marked with `needs_translation: true` and automatica
 | `transcript_analyzer.py` | Transcript analysis | Extracts tools, techniques, tips |
 | `transcript_search.py` | Search index | Builds FTS5 full-text search |
 | `style_code_gallery.py` | Sref gallery | Generates Midjourney style reference gallery |
+| `vllm_manager.py` | GPU management | Start/stop vLLM to free GPU memory |
 
 ### Frontend (C:\Users\scott\ebay-automation\frontend\)
 
@@ -282,6 +305,9 @@ Collection: `uncles_wisdom` - Used by both orchestrator actions and server.py
 | Tool data format (Jan 26) | generate_reports.py | Fixed tool_mentions JSON loading |
 | Bare except clauses (Jan 26) | outlook_reader.py, scott_folder_organizer.py | Specified exception types |
 | Transcript data loss (Jan 26) | youtube_metadata.py | Added data protection, --retry-failed option |
+| Permanent failure tracking (Jan 26) | youtube_metadata.py | Mark videos that can never have transcripts |
+| Non-English transcripts (Jan 26) | youtube_metadata.py | Fetch any language, mark for translation |
+| vLLM endpoint paths (Jan 26) | translate_transcripts.py | Fixed /v1/ prefix for API calls |
 
 ---
 
@@ -293,8 +319,9 @@ All ports, paths, and settings now centralized:
 
 ```python
 from kb_config import (
-    API_PORT, VLLM_PORT, OLLAMA_MODEL,
-    get_logger, backup_database, RateLimiter, ProgressTracker
+    API_PORT, VLLM_PORT, VLLM_MODEL,
+    get_logger, backup_database, RateLimiter, ProgressTracker,
+    is_vllm_running, start_vllm, stop_vllm
 )
 ```
 

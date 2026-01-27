@@ -64,21 +64,30 @@ npm run dev
 
 # View static reports
 start chrome "D:\AI-Knowledge-Base\exports\index.html"
+
+# vLLM GPU Management
+python vllm_manager.py status   # Check if vLLM is running
+python vllm_manager.py stop     # Stop vLLM, free GPU memory
+python vllm_manager.py start    # Start vLLM server
+
+# Run pipeline and free GPU after
+python run_pipeline.py --stop-llm
 ```
 
-### Pipeline Stages (11 total)
+### Pipeline Stages (12 total)
 
 1. **extract** - Extract URLs from emails (runs FIRST to capture before organizing)
 2. **organize** - Organize Outlook emails into subfolders
-3. **youtube** - Fetch video metadata/transcripts
+3. **youtube** - Fetch video metadata/transcripts (any language)
 4. **analyze** - Extract tools, tips from transcripts
-5. **search** - Build FTS5 search index
-6. **llm** - vLLM/QWEN knowledge extraction (4 hour timeout)
-7. **reports** - Generate HTML reports
-8. **gallery** - Generate Midjourney sref gallery
-9. **models** - Generate AI model tracking report
-10. **courses** - Generate course materials
-11. **sync** - Sync to D: drive
+5. **translate** - Translate non-English transcripts to English
+6. **search** - Build FTS5 search index
+7. **llm** - vLLM/QWEN knowledge extraction (4 hour timeout)
+8. **reports** - Generate HTML reports
+9. **gallery** - Generate Midjourney sref gallery
+10. **models** - Generate AI model tracking report
+11. **courses** - Generate course materials
+12. **sync** - Sync to D: drive
 
 ### Key Files
 
@@ -86,7 +95,10 @@ start chrome "D:\AI-Knowledge-Base\exports\index.html"
 |------|---------|
 | `run_pipeline.py` | Master orchestration script |
 | `server.py` | FastAPI backend (port 8001) |
-| `extract_knowledge.py` | vLLM/Ollama knowledge extraction |
+| `extract_knowledge.py` | vLLM knowledge extraction |
+| `translate_transcripts.py` | Non-English transcript translation |
+| `youtube_metadata.py` | YouTube transcript fetching |
+| `vllm_manager.py` | Start/stop vLLM, manage GPU memory |
 | `ai_content_extractor.py` | Email URL extraction |
 | `scott_folder_organizer.py` | Email organization |
 | `kb_config.py` | Centralized config, logging, utilities |
@@ -103,7 +115,9 @@ Both server.py and orchestrator actions use this same path.
 
 ### Current Stats (Jan 26, 2026)
 
-- 124 GitHub repos, 45 HuggingFace models, 51 YouTube tutorials (36 with transcripts)
+- 124 GitHub repos, 45 HuggingFace models, 51 YouTube tutorials (48 with transcripts)
+- 3 permanent transcript failures (disabled by uploaders)
+- 1 non-English transcript (Spanish, translated to English)
 - 45 extracted knowledge files, 36 analysis files, 19 export reports
 - 3 Midjourney sref codes
 
